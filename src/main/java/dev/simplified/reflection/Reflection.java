@@ -20,9 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Allows for access to hidden fields, methods and classes.
+ * Allows for cached access to hidden fields, methods and classes.
  */
-@SuppressWarnings( "unchecked" )
+@SuppressWarnings("all")
 public class Reflection {
 
 	private static final double JAVA_VERSION = Double.parseDouble(ManagementFactory.getRuntimeMXBean().getSpecVersion());

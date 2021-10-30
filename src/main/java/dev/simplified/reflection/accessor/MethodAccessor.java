@@ -1,25 +1,21 @@
 package dev.sbs.api.reflection.accessor;
 
-import dev.sbs.api.reflection.exception.ReflectionException;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.reflection.exception.ReflectionException;
+import dev.sbs.api.util.concurrent.Concurrent;
+import dev.sbs.api.util.helper.FormatUtil;
+import dev.sbs.api.util.helper.StringUtil;
 
 import java.lang.reflect.Method;
+import java.util.Objects;
 
 /**
  * Grants simpler access to method invoking.
  */
 public final class MethodAccessor extends ReflectionAccessor<Method> {
 
-	private final Method method;
-
 	public MethodAccessor(Reflection reflection, Method method) {
-		super(reflection);
-		this.method = method;
-	}
-
-	@Override
-	protected Method getHandle() {
-		return this.method;
+		super(reflection, method);
 	}
 
 	/**
@@ -44,8 +40,14 @@ public final class MethodAccessor extends ReflectionAccessor<Method> {
 	public Object invoke(Object obj, Object... args) throws ReflectionException {
 		try {
 			return this.getMethod().invoke(obj, args);
-		} catch (Exception ex) {
-			throw new ReflectionException(ex);
+		} catch (Exception exception) {
+			String arguments = StringUtil.join(
+					Concurrent.newList(args)
+							.stream()
+							.map(Objects::toString)
+							.collect(Concurrent.toList()),
+					',');
+			throw new ReflectionException(FormatUtil.format("Unable to invoke method ''{0}'' in ''{1}'' with arguments [{2}].", this.getMethod(), this.getClazz(), arguments), exception);
 		}
 	}
 

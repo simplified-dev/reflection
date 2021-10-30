@@ -1,27 +1,44 @@
 package dev.sbs.api.reflection.accessor;
 
-
-import dev.sbs.api.reflection.exception.ReflectionException;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.reflection.exception.ReflectionException;
+import dev.sbs.api.util.builder.EqualsBuilder;
+import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
+import dev.sbs.api.util.helper.FormatUtil;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-abstract class ReflectionAccessor<T> {
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AccessibleObject;
 
+@RequiredArgsConstructor
+abstract class ReflectionAccessor<T extends AccessibleObject> {
+
+	/**
+	 * Gets the reflection object associated with this accessor.
+	 */
+	@Getter
 	private final Reflection reflection;
 
-	public ReflectionAccessor(Reflection reflection) {
-		this.reflection = reflection;
-	}
+	/**
+	 * Gets the instance of type {@link T}.
+	 */
+	@Getter
+	private final T handle;
 
 	@Override
-	@SuppressWarnings("rawtypes")
 	public final boolean equals(Object obj) {
-		if (obj == this)
-			return true;
-		else if (!(obj instanceof ReflectionAccessor))
-			return false;
-		else {
-			ReflectionAccessor other = (ReflectionAccessor)obj;
-			return this.getClazz().equals(other.getClazz()) && this.getHandle().equals(other.getHandle());
+		if (obj == this) return true;
+		if (!(obj instanceof ReflectionAccessor<?>)) return false;
+		ReflectionAccessor<?> other = (ReflectionAccessor<?>)obj;
+		return new EqualsBuilder().append(this.getClazz(), other.getClazz()).append(this.getHandle(), other.getHandle()).build();
+	}
+
+	public final <A extends Annotation> A getAnnotation(Class<A> annotationClass) {
+		try {
+			return this.getHandle().getAnnotation(annotationClass);
+		} catch (Exception exception) {
+			throw new ReflectionException(FormatUtil.format("Unable to locate annotation ''{0}''.", annotationClass), exception);
 		}
 	}
 
@@ -37,18 +54,9 @@ abstract class ReflectionAccessor<T> {
 		return this.getReflection().getClazz();
 	}
 
-	protected abstract T getHandle();
-
-	/**
-	 * Gets the reflection object associated with this accessor.
-	 */
-	public final Reflection getReflection() {
-		return this.reflection;
-	}
-
 	@Override
 	public final int hashCode() {
-		return this.getClazz().hashCode() + this.getHandle().hashCode();
+		return new HashCodeBuilder().append(this.getClazz()).append(this.getHandle()).build();
 	}
 
 }

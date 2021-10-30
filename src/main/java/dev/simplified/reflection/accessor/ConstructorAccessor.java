@@ -1,20 +1,21 @@
 package dev.sbs.api.reflection.accessor;
 
-import dev.sbs.api.reflection.exception.ReflectionException;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.reflection.exception.ReflectionException;
+import dev.sbs.api.util.concurrent.Concurrent;
+import dev.sbs.api.util.helper.FormatUtil;
+import dev.sbs.api.util.helper.StringUtil;
 
 import java.lang.reflect.Constructor;
+import java.util.Objects;
 
 /**
  * Grants simpler access to constructor instantialization.
  */
 public final class ConstructorAccessor extends ReflectionAccessor<Constructor<?>> {
 
-	private final Constructor<?> constructor;
-
 	public ConstructorAccessor(Reflection reflection, Constructor<?> constructor) {
-		super(reflection);
-		this.constructor = constructor;
+		super(reflection, constructor);
 	}
 
 	/**
@@ -24,11 +25,6 @@ public final class ConstructorAccessor extends ReflectionAccessor<Constructor<?>
 	 */
 	public Constructor<?> getConstructor() {
 		return this.getHandle();
-	}
-
-	@Override
-	protected Constructor<?> getHandle() {
-		return this.constructor;
 	}
 
 	/**
@@ -42,8 +38,14 @@ public final class ConstructorAccessor extends ReflectionAccessor<Constructor<?>
 	public Object newInstance(Object... args) throws ReflectionException {
 		try {
 			return this.getConstructor().newInstance(args);
-		} catch (Exception ex) {
-			throw new ReflectionException(ex);
+		} catch (Exception exception) {
+			String arguments = StringUtil.join(
+					Concurrent.newList(args)
+							.stream()
+							.map(Objects::toString)
+							.collect(Concurrent.toList()),
+			',');
+			throw new ReflectionException(FormatUtil.format("Unable to create new instance of ''{0}'' with arguments [{1}].", this.getClazz(), arguments), exception);
 		}
 	}
 

@@ -1,7 +1,8 @@
 package dev.sbs.api.reflection.accessor;
 
-import dev.sbs.api.reflection.exception.ReflectionException;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.reflection.exception.ReflectionException;
+import dev.sbs.api.util.helper.FormatUtil;
 
 import java.lang.reflect.Field;
 
@@ -10,11 +11,8 @@ import java.lang.reflect.Field;
  */
 public final class FieldAccessor extends ReflectionAccessor<Field> {
 
-	private final Field field;
-
 	public FieldAccessor(Reflection reflection, Field field) {
-		super(reflection);
-		this.field = field;
+		super(reflection, field);
 	}
 
 	/**
@@ -24,11 +22,6 @@ public final class FieldAccessor extends ReflectionAccessor<Field> {
 	 */
 	public Field getField() {
 		return this.getHandle();
-	}
-
-	@Override
-	protected Field getHandle() {
-		return this.field;
 	}
 
 	/**
@@ -41,7 +34,7 @@ public final class FieldAccessor extends ReflectionAccessor<Field> {
 	 * @return The field value with matching type.
 	 * @throws ReflectionException When the static field cannot be located.
 	 */
-	public Object get() throws ReflectionException {
+	public <T> T get() throws ReflectionException {
 		return this.get(null);
 	}
 
@@ -54,11 +47,12 @@ public final class FieldAccessor extends ReflectionAccessor<Field> {
 	 * @return The field value with matching type.
 	 * @throws ReflectionException When the field cannot be located.
 	 */
-	public Object get(Object obj) throws ReflectionException {
+	@SuppressWarnings("unchecked")
+	public <T> T get(Object obj) throws ReflectionException {
 		try {
-			return this.getField().get(obj);
-		} catch (Exception ex) {
-			throw new ReflectionException(ex);
+			return (T)this.getField().get(obj);
+		} catch (Exception exception) {
+			throw new ReflectionException(FormatUtil.format("Unable to get field ''{0}'' from ''{1}''.", this.getField(), obj), exception);
 		}
 	}
 
@@ -88,8 +82,8 @@ public final class FieldAccessor extends ReflectionAccessor<Field> {
 	public void set(Object obj, Object value) throws ReflectionException {
 		try {
 			this.getField().set(obj, value);
-		} catch (Exception ex) {
-			throw new ReflectionException(ex);
+		} catch (Exception exception) {
+			throw new ReflectionException(FormatUtil.format("Unable to set field ''{0}'' to ''{1}'' in ''{2}''.", this.getField(), value, obj), exception);
 		}
 	}
 
