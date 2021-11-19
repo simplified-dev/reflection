@@ -10,7 +10,12 @@ import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
 
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.*;
+import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.URL;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
@@ -469,7 +474,7 @@ public class Reflection {
 			} catch (Exception ignore) { }
 		}
 
-		throw new ReflectionException(FormatUtil.format("Unable to locate generic class in {0} at index {1}"));
+		throw new ReflectionException(FormatUtil.format("Unable to locate generic class in ''{0}'' at index {1}", tClass.getSimpleName(), index));
 	}
 
 	/**
