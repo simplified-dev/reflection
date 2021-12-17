@@ -187,6 +187,7 @@ public class Reflection {
 
         for (Constructor<?> constructor : this.getClazz().getDeclaredConstructors()) {
             Class<?>[] constructorTypes = toPrimitiveTypeArray(constructor.getParameterTypes());
+            boolean equals = isEqualsTypeArray(constructorTypes, types);
 
             if (isEqualsTypeArray(constructorTypes, types)) {
                 constructor.setAccessible(true);
@@ -195,9 +196,6 @@ public class Reflection {
                 return constructorAccessor;
             }
         }
-
-        if (this.getClazz().getSuperclass() != null)
-            return this.getSuperReflection().getConstructor(paramTypes);
 
         throw SimplifiedException.builder(ReflectionException.class)
             .setMessage("The constructor matching ''{0}'' was not found!", Arrays.asList(types))
@@ -696,7 +694,8 @@ public class Reflection {
     public final Object newInstance(Object... args) throws ReflectionException {
         try {
             Class<?>[] types = toPrimitiveTypeArray(args);
-            return this.getConstructor(types).newInstance(args);
+            ConstructorAccessor c = this.getConstructor(types);
+            return c.newInstance(args);
         } catch (ReflectionException reflectionException) {
             throw reflectionException;
         } catch (Exception ex) {
