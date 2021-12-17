@@ -43,7 +43,7 @@ public final class MethodAccessor extends ReflectionAccessor<Method> {
         } catch (Exception exception) {
             StringBuilder arguments = new StringBuilder();
             Arrays.stream(args)
-                .map(Objects::nonNull)
+                .filter(Objects::nonNull)
                 .map(Objects::toString)
                 .forEach(arg -> {
                     arguments.appendSeparator(',');
