@@ -1,6 +1,5 @@
 package dev.sbs.api.reflection.accessor;
 
-import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.exception.ReflectionException;
 import dev.sbs.api.util.builder.EqualsBuilder;
@@ -10,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 abstract class ReflectionAccessor<T extends AccessibleObject> {
@@ -34,15 +34,8 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
         return new EqualsBuilder().append(this.getClazz(), other.getClazz()).append(this.getHandle(), other.getHandle()).build();
     }
 
-    public final <A extends Annotation> A getAnnotation(Class<A> annotationClass) {
-        try {
-            return this.getHandle().getAnnotation(annotationClass);
-        } catch (Exception exception) {
-            throw SimplifiedException.builder(ReflectionException.class)
-                .setMessage("Unable to locate annotation ''{0}''.", annotationClass)
-                .setCause(exception)
-                .build();
-        }
+    public final <A extends Annotation> Optional<A> getAnnotation(Class<A> annotationClass) {
+        return Optional.ofNullable(this.getHandle().isAnnotationPresent(annotationClass) ? this.getHandle().getAnnotation(annotationClass) : null);
     }
 
     /**
