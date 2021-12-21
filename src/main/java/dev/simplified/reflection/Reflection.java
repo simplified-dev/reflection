@@ -1,6 +1,5 @@
 package dev.sbs.api.reflection;
 
-import com.google.common.base.Preconditions;
 import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.reflection.accessor.ConstructorAccessor;
 import dev.sbs.api.reflection.accessor.FieldAccessor;
@@ -9,6 +8,7 @@ import dev.sbs.api.reflection.exception.ReflectionException;
 import dev.sbs.api.util.Primitives;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
+import lombok.NonNull;
 
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
@@ -28,8 +28,8 @@ import java.util.Map;
 /**
  * Allows for cached access to hidden fields, methods and classes.
  */
-@SuppressWarnings("all")
-public class Reflection {
+@SuppressWarnings("unchecked")
+public class Reflection<T> {
 
     private static final double JAVA_VERSION = Double.parseDouble(ManagementFactory.getRuntimeMXBean().getSpecVersion());
     private static final transient Map<String, Map<Class<?>[], ConstructorAccessor>> CONSTRUCTOR_CACHE = new HashMap<>();
@@ -47,8 +47,7 @@ public class Reflection {
      *
      * @param clazz The class to reflect.
      */
-    public Reflection(Class<?> clazz) {
-        Preconditions.checkNotNull(clazz, "Class cannot be NULL!");
+    private Reflection(@NonNull Class<T> clazz) {
         clazz = Primitives.wrap(clazz);
 
         try {
@@ -78,7 +77,7 @@ public class Reflection {
      * @param className   The class name to reflect.
      * @param packagePath The package the {@literal className} belongs to.
      */
-    public Reflection(String className, String packagePath) {
+    private Reflection(String className, String packagePath) {
         this(className, "", packagePath);
     }
 
@@ -89,10 +88,22 @@ public class Reflection {
      * @param subPackage  The sub package the {@literal className} belongs to.
      * @param packagePath The package the {@literal className} belongs to.
      */
-    public Reflection(String className, String subPackage, String packagePath) {
+    private Reflection(String className, String subPackage, String packagePath) {
         this.className = className;
         this.subPackage = StringUtil.defaultString(subPackage).replaceAll("\\.$", "").replaceAll("^\\.", "");
         this.packagePath = packagePath;
+    }
+
+    public static <T> Reflection<T> of(Class<T> clazz) {
+        return new Reflection<>(clazz);
+    }
+
+    public static <T> Reflection<T> of(String className, String packagePath) {
+        return new Reflection<>(className, packagePath);
+    }
+
+    public static <T> Reflection<T> of(String className, String subPackage, String packagePath) {
+        return new Reflection<>(className, subPackage, packagePath);
     }
 
     /**
@@ -121,12 +132,12 @@ public class Reflection {
      * @return The class object.
      * @throws ReflectionException When the class cannot be located.
      */
-    public final Class<?> getClazz() throws ReflectionException {
+    public final Class<T> getClazz() throws ReflectionException {
         try {
             if (!CLASS_CACHE.containsKey(this.getClazzPath()))
                 CLASS_CACHE.put(this.getClazzPath(), Class.forName(this.getClazzPath()));
 
-            return CLASS_CACHE.get(this.getClazzPath());
+            return (Class<T>) CLASS_CACHE.get(this.getClazzPath());
         } catch (Exception ex) {
             throw SimplifiedException.of(ReflectionException.class)
                 .withCause(ex)
@@ -187,7 +198,6 @@ public class Reflection {
 
         for (Constructor<?> constructor : this.getClazz().getDeclaredConstructors()) {
             Class<?>[] constructorTypes = toPrimitiveTypeArray(constructor.getParameterTypes());
-            boolean equals = isEqualsTypeArray(constructorTypes, types);
 
             if (isEqualsTypeArray(constructorTypes, types)) {
                 constructor.setAccessible(true);
@@ -448,10 +458,10 @@ public class Reflection {
      * Gets the generic class specified at index 0.
      *
      * @param obj the instance to check for generics
-     * @param <T> the type to return as
+     * @param <U> the type to return as
      * @return the generic superclass
      */
-    public static <T> Class<T> getSuperClass(Object obj) {
+    public static <U> Class<U> getSuperClass(Object obj) {
         return getSuperClass(obj.getClass(), 0);
     }
 
@@ -459,10 +469,10 @@ public class Reflection {
      * Gets the generic class specified at index 0.
      *
      * @param tClass the class to check for generics
-     * @param <T>    the type to return as
+     * @param <U>    the type to return as
      * @return the generic superclass
      */
-    public static <T> Class<T> getSuperClass(Class<?> tClass) {
+    public static <U> Class<U> getSuperClass(Class<?> tClass) {
         return getSuperClass(tClass, 0);
     }
 
@@ -471,20 +481,20 @@ public class Reflection {
      *
      * @param tClass the class to check for generics
      * @param index  the index to check for generics
-     * @param <T>    the type to return as
+     * @param <U>    the type to return as
      * @return the generic superclass
      */
     @SuppressWarnings("unchecked")
-    public static <T> Class<T> getSuperClass(Class<?> tClass, int index) {
+    public static <U> Class<U> getSuperClass(Class<?> tClass, int index) {
         try { // Classes
             ParameterizedType superClass = (ParameterizedType) tClass.getGenericSuperclass();
-            return (Class<T>) superClass.getActualTypeArguments()[index];
+            return (Class<U>) superClass.getActualTypeArguments()[index];
         } catch (ClassCastException exception) { // Types
             try {
                 for (Type type : tClass.getGenericInterfaces()) {
                     if (type instanceof ParameterizedType) {
                         ParameterizedType superClass = (ParameterizedType) type;
-                        return (Class<T>) superClass.getActualTypeArguments()[index];
+                        return (Class<U>) superClass.getActualTypeArguments()[index];
                     }
                 }
             } catch (Exception ignore) {
@@ -500,10 +510,10 @@ public class Reflection {
      * Gets a generic class array specified at index 0.
      *
      * @param tClass the class to check for generics
-     * @param <T>    the type to return as
+     * @param <U>    the type to return as
      * @return the generic superclass array
      */
-    public static <T> Class<T[]> getSuperClassArray(Class<?> tClass) {
+    public static <U> Class<U[]> getSuperClassArray(Class<?> tClass) {
         return getSuperClassArray(tClass, 0);
     }
 
@@ -512,13 +522,13 @@ public class Reflection {
      *
      * @param tClass the class to check for generics
      * @param index  the index to check for generics
-     * @param <T>    the type to return as
+     * @param <U>    the type to return as
      * @return the generic superclass array
      */
     @SuppressWarnings("unchecked")
-    public static <T> Class<T[]> getSuperClassArray(Class<?> tClass, int index) {
+    public static <U> Class<U[]> getSuperClassArray(Class<?> tClass, int index) {
         ParameterizedType superClass = (ParameterizedType) tClass.getGenericSuperclass();
-        return (Class<T[]>) Array.newInstance((Class<T>) superClass.getActualTypeArguments()[index], 0).getClass();
+        return (Class<U[]>) Array.newInstance((Class<U>) superClass.getActualTypeArguments()[index], 0).getClass();
     }
 
     /**
@@ -529,11 +539,11 @@ public class Reflection {
      * @return The reflected superclass.
      * @throws ReflectionException When the class or superclass cannot be located.
      */
-    private Reflection getSuperReflection() throws ReflectionException {
+    private Reflection<?> getSuperReflection() throws ReflectionException {
         Class<?> superClass = this.getClazz().getSuperclass();
         String className = superClass.getSimpleName();
         String packageName = (superClass.getPackage() != null ? superClass.getPackage().getName() : superClass.getName().replaceAll(FormatUtil.format("\\.{0}$", className), ""));
-        return new Reflection(className, packageName);
+        return of(className, packageName);
     }
 
     /**
@@ -550,7 +560,7 @@ public class Reflection {
      * @return The field value with matching type.
      * @throws ReflectionException When the class or field cannot be located.
      */
-    public final Object getValue(Reflection reflection, Object obj) throws ReflectionException {
+    public final Object getValue(Reflection<?> reflection, Object obj) throws ReflectionException {
         return this.getValue(reflection.getClazz(), obj);
     }
 
@@ -566,8 +576,8 @@ public class Reflection {
      * @return The field value with matching type.
      * @throws ReflectionException When the class or field cannot be located.
      */
-    public final <T> T getValue(Class<T> type, Object obj) throws ReflectionException {
-        return (T) this.getField(type).get(obj);
+    public final <U> U getValue(Class<U> type, Object obj) throws ReflectionException {
+        return this.getField(type).get(obj);
     }
 
     /**
@@ -627,7 +637,7 @@ public class Reflection {
      * @return The invoked method value with matching return type.
      * @throws ReflectionException When the class or method with matching arguments cannot be located.
      */
-    public final Object invokeMethod(Reflection reflection, Object obj, Object... args) throws ReflectionException {
+    public final Object invokeMethod(Reflection<?> reflection, Object obj, Object... args) throws ReflectionException {
         return this.invokeMethod(reflection.getClazz(), obj, args);
     }
 
@@ -644,9 +654,9 @@ public class Reflection {
      * @return The invoked method value with matching return type.
      * @throws ReflectionException When the class or method with matching arguments cannot be located.
      */
-    public final <T> T invokeMethod(Class<T> type, Object obj, Object... args) throws ReflectionException {
+    public final <U> U invokeMethod(Class<U> type, Object obj, Object... args) throws ReflectionException {
         Class<?>[] types = toPrimitiveTypeArray(args);
-        return (T) this.getMethod(type, types).invoke(obj, args);
+        return (U) this.getMethod(type, types).invoke(obj, args);
     }
 
     /**
@@ -691,11 +701,11 @@ public class Reflection {
      * @param args The arguments with matching types to pass to the constructor.
      * @throws ReflectionException When the class or constructor with matching arguments cannot be located.
      */
-    public final Object newInstance(Object... args) throws ReflectionException {
+    public final T newInstance(Object... args) throws ReflectionException {
         try {
             Class<?>[] types = toPrimitiveTypeArray(args);
             ConstructorAccessor c = this.getConstructor(types);
-            return c.newInstance(args);
+            return (T) c.newInstance(args);
         } catch (ReflectionException reflectionException) {
             throw reflectionException;
         } catch (Exception ex) {
@@ -719,7 +729,7 @@ public class Reflection {
      * @param value      The new value of the field.
      * @throws ReflectionException When the class or field cannot be located.
      */
-    public final void setValue(Reflection reflection, Object obj, Object value) throws ReflectionException {
+    public final void setValue(Reflection<?> reflection, Object obj, Object value) throws ReflectionException {
         this.setValue(reflection.getClazz(), obj, value);
     }
 
