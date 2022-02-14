@@ -8,7 +8,7 @@ import dev.sbs.api.reflection.exception.ReflectionException;
 import dev.sbs.api.util.Primitives;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
-import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
@@ -46,7 +46,7 @@ public class Reflection<T> {
      *
      * @param clazz The class to reflect.
      */
-    private Reflection(@NonNull Class<T> clazz) {
+    private Reflection(@NotNull Class<T> clazz) {
         clazz = Primitives.wrap(clazz);
 
         try {
