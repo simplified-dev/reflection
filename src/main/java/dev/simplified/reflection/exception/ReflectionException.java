@@ -1,10 +1,10 @@
 package dev.sbs.api.reflection.exception;
 
-import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.util.concurrent.ConcurrentList;
-import dev.sbs.api.util.concurrent.ConcurrentMap;
-import dev.sbs.api.util.tuple.Triple;
+import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
+import dev.sbs.api.util.data.tuple.Triple;
 
 /**
  * {@link ReflectionException ReflectionExceptions} are thrown when the {@link Reflection} class is unable<br>

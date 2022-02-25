@@ -1,8 +1,8 @@
 package dev.sbs.api.reflection.accessor;
 
-import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.exception.ReflectionException;
+import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.string.StringBuilder;
 
 import java.lang.reflect.Constructor;

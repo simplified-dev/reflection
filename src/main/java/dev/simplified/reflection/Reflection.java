@@ -1,11 +1,11 @@
 package dev.sbs.api.reflection;
 
-import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.reflection.accessor.ConstructorAccessor;
 import dev.sbs.api.reflection.accessor.FieldAccessor;
 import dev.sbs.api.reflection.accessor.MethodAccessor;
 import dev.sbs.api.reflection.exception.ReflectionException;
 import dev.sbs.api.util.Primitives;
+import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import org.jetbrains.annotations.NotNull;
