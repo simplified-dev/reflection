@@ -6,10 +6,16 @@ import dev.sbs.api.reflection.accessor.MethodAccessor;
 import dev.sbs.api.reflection.exception.ReflectionException;
 import dev.sbs.api.util.Primitives;
 import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.helper.ClassUtil;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -21,25 +27,26 @@ import java.net.URL;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Allows for cached access to hidden fields, methods and classes.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings("all")
 public class Reflection<T> {
 
     private static final double JAVA_VERSION = Double.parseDouble(ManagementFactory.getRuntimeMXBean().getSpecVersion());
-    private static final transient Map<String, Map<Class<?>[], ConstructorAccessor>> CONSTRUCTOR_CACHE = new HashMap<>();
-    private static final transient Map<String, Map<Class<?>, Map<Class<?>[], MethodAccessor>>> METHOD_CACHE_CLASS = new HashMap<>();
-    private static final transient Map<String, Map<String, Map<Class<?>[], MethodAccessor>>> METHOD_CACHE_NAME = new HashMap<>();
-    private static final transient Map<String, Map<Class<?>, FieldAccessor>> FIELD_CACHE_CLASS = new HashMap<>();
-    private static final transient Map<String, Map<String, FieldAccessor>> FIELD_CACHE_NAME = new HashMap<>();
-    private static final transient Map<String, Class<?>> CLASS_CACHE = new HashMap<>();
-    private final String className;
-    private final String subPackage;
-    private final String packagePath;
+    private static final Map<String, Map<Class<?>[], ConstructorAccessor>> CONSTRUCTOR_CACHE = new HashMap<>();
+    private static final Map<String, Map<Class<?>, Map<Class<?>[], MethodAccessor>>> METHOD_CACHE_CLASS = new HashMap<>();
+    private static final Map<String, Map<String, Map<Class<?>[], MethodAccessor>>> METHOD_CACHE_NAME = new HashMap<>();
+    private static final Map<String, Map<Class<?>, FieldAccessor>> FIELD_CACHE_CLASS = new HashMap<>();
+    private static final Map<String, Map<String, FieldAccessor>> FIELD_CACHE_NAME = new HashMap<>();
+    private static final Map<String, Class<?>> CLASS_CACHE = new HashMap<>();
+    private final @NotNull String packagePath;
+    @Getter private final @NotNull String subPackage;
+    @Getter private final @NotNull String clazzName;
 
     /**
      * Creates a new reflection instance of {@literal clazz}.
@@ -50,7 +57,7 @@ public class Reflection<T> {
         clazz = Primitives.wrap(clazz);
 
         try {
-            this.className = clazz.getSimpleName();
+            this.clazzName = clazz.getSimpleName();
         } catch (Exception ex) {
             throw SimplifiedException.of(ReflectionException.class)
                 .withMessage("Unable to get simple name for ''{0}''!", clazz.getName())
@@ -63,7 +70,7 @@ public class Reflection<T> {
             this.packagePath = clazz.getPackage().getName();
         } else {
             this.subPackage = "";
-            this.packagePath = clazz.getName().replaceAll(FormatUtil.format("\\.{0}$", this.className), "");
+            this.packagePath = clazz.getName().replaceAll(FormatUtil.format("\\.{0}$", this.clazzName), "");
         }
 
         if (!CLASS_CACHE.containsKey(this.getClazzPath()))
@@ -76,7 +83,7 @@ public class Reflection<T> {
      * @param className   The class name to reflect.
      * @param packagePath The package the {@literal className} belongs to.
      */
-    private Reflection(String className, String packagePath) {
+    private Reflection(@NotNull String className, @NotNull String packagePath) {
         this(className, "", packagePath);
     }
 
@@ -87,31 +94,77 @@ public class Reflection<T> {
      * @param subPackage  The sub package the {@literal className} belongs to.
      * @param packagePath The package the {@literal className} belongs to.
      */
-    private Reflection(String className, String subPackage, String packagePath) {
-        this.className = className;
+    private Reflection(@NotNull String className, @NotNull String subPackage, @NotNull String packagePath) {
+        this.clazzName = className;
         this.subPackage = StringUtil.defaultString(subPackage).replaceAll("\\.$", "").replaceAll("^\\.", "");
         this.packagePath = packagePath;
     }
 
-    public static <T> Reflection<T> of(Class<T> clazz) {
+    public static <T> Reflection<T> of(@NotNull Class<T> clazz) {
         return new Reflection<>(clazz);
     }
 
-    public static <T> Reflection<T> of(String className, String packagePath) {
+    public static <T> Reflection<T> of(@NotNull String className, @NotNull String packagePath) {
         return new Reflection<>(className, packagePath);
     }
 
-    public static <T> Reflection<T> of(String className, String subPackage, String packagePath) {
+    public static <T> Reflection<T> of(@NotNull String className, @NotNull String subPackage, @NotNull String packagePath) {
         return new Reflection<>(className, subPackage, packagePath);
     }
 
     /**
-     * Gets the class name.
+     * Scans all classes accessible from the {@link ClassLoader} which belong to the given package and subpackages.
      *
-     * @return The class name.
+     * @param packagePath The package to scan.
+     * @return The found classes.
+     * @throws ClassNotFoundException
+     * @throws IOException
      */
-    public final String getClazzName() {
-        return this.className;
+    public static ConcurrentList<Class<?>> getClassesFromPackage(@NotNull String packagePath) {
+        try {
+            Enumeration<URL> resources = ClassUtil.getClassLoader().getResources(packagePath.replace('.', '/'));
+            ConcurrentList<File> directories = Concurrent.newList();
+            ConcurrentList<Class<?>> classes = Concurrent.newList();
+
+            // Directories
+            while (resources.hasMoreElements())
+                directories.add(new File(resources.nextElement().getFile()));
+
+            // Classes
+            for (File directory : directories)
+                classes.addAll(findClasses(directory, packagePath));
+
+            return classes;
+        } catch (IOException ignore) { }
+
+        return Concurrent.newList();
+    }
+
+    /**
+     * Recursive method used to find all classes in a given directory and subdirs.
+     *
+     * @param directory The base directory.
+     * @param packageName The package name for classes found inside the base directory.
+     * @return The found classes.
+     * @throws ClassNotFoundException
+     */
+    private static ConcurrentList<Class<?>> findClasses(File directory, String packageName) {
+        ConcurrentList<Class<?>> classes = Concurrent.newList();
+        if (!directory.exists())
+            return classes;
+
+        File[] files = directory.listFiles();
+        for (File file : files) {
+            if (file.isDirectory() && !file.getName().contains("."))
+                classes.addAll(findClasses(file, packageName + "." + file.getName()));
+            else if (file.getName().endsWith(".class")) {
+                try {
+                    classes.add(Class.forName(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
+                } catch (ClassNotFoundException ignore) { }
+            }
+        }
+
+        return classes;
     }
 
     /**
@@ -442,15 +495,6 @@ public class Reflection<T> {
      */
     public final String getPackagePath() {
         return this.packagePath + (StringUtil.isNotEmpty(this.subPackage) ? "." + this.subPackage : "");
-    }
-
-    /**
-     * Gets the subpackage path.
-     *
-     * @return The subpackage path.
-     */
-    public final String getSubPackage() {
-        return this.subPackage;
     }
 
     /**
