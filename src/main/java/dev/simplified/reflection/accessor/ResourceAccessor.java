@@ -21,7 +21,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Map;
-import java.util.Objects;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
@@ -31,8 +30,13 @@ public class ResourceAccessor {
     @Getter private final @NotNull ConcurrentList<ResourceInfo> resources;
 
     public ResourceAccessor(@NotNull ClassLoader classLoader) {
+        this(classLoader, null);
+    }
+
+    public ResourceAccessor(@NotNull ClassLoader classLoader, @Nullable String packageName) {
         this.classLoader = classLoader;
         ConcurrentList<LocationInfo> locations = getLocationsFromClassLoader(classLoader);
+        String resourceName = StringUtil.stripToEmpty(packageName).replace(".", "/").toLowerCase();
 
         // Add all locations to the scanned set so that in a classpath [jar1, jar2], where jar1 has a
         // manifest with Class-Path pointing to jar2, we won't scan jar2 twice.
@@ -43,27 +47,41 @@ public class ResourceAccessor {
         // Scan all locations
         this.resources = locations.stream()
             .flatMap(locationInfo -> locationInfo.scanResources(scanned).stream())
+            .filter(resourceInfo -> StringUtil.isEmpty(resourceName) || resourceInfo.getResourceName().startsWith(resourceName))
             .collect(Concurrent.toList())
             .toUnmodifiableList();
     }
 
-    public ConcurrentList<ClassInfo> getClasses() {
-        return getClasses(null);
+    private ResourceAccessor(@NotNull ClassLoader classLoader, @NotNull ConcurrentList<ResourceInfo> resources, @NotNull String packageName) {
+        this.classLoader = classLoader;
+        String resourceName = StringUtil.stripToEmpty(packageName).replace(".", "/").toLowerCase();
+
+        this.resources = resources.stream()
+            .filter(resourceInfo -> resourceInfo.getResourceName().startsWith(resourceName))
+            .collect(Concurrent.toList())
+            .toUnmodifiableList();
     }
 
-    public ConcurrentList<ClassInfo> getClasses(@Nullable String packageName) {
+    public ResourceAccessor filterPackage(@NotNull Class<?> type) {
+        return this.filterPackage(Reflection.getPackageName(type));
+    }
+
+    public ResourceAccessor filterPackage(@NotNull String packageName) {
+        return new ResourceAccessor(this.getClassLoader(), this.getResources(), packageName);
+    }
+
+    public ConcurrentList<ClassInfo> getClasses() {
         return this.getResources()
             .stream()
             .filter(resourceInfo -> resourceInfo instanceof ClassInfo)
             .map(ClassInfo.class::cast)
-            .filter(classInfo -> Objects.isNull(StringUtil.stripToNull(packageName)) || classInfo.getPackageName().startsWith(packageName.toLowerCase()))
             .collect(Concurrent.toList())
             .toUnmodifiableList();
     }
 
     @SuppressWarnings("unchecked")
     public <T> ConcurrentList<Class<T>> getSubtypesOf(@NotNull Class<T> type) {
-        return this.getClasses(Reflection.getPackageName(type))
+        return this.getClasses()
             .stream()
             .map(ClassInfo::load)
             .filter(storedType -> !storedType.equals(type))
