@@ -25,7 +25,7 @@ public final class FieldAccessor extends ReflectionAccessor<Field> {
     }
 
     /**
-     * Gets the value of a field with matching {@link #getClazz() class type}.
+     * Gets the value of a field with matching {@link #getType() class type}.
      * <p>
      * This is the same as calling {@link #get(Object) get(null)}.
      * <p>
@@ -39,7 +39,7 @@ public final class FieldAccessor extends ReflectionAccessor<Field> {
     }
 
     /**
-     * Gets the value of a field with matching {@link #getClazz() class type}.
+     * Gets the value of a field with matching {@link #getType() class type}.
      * <p>
      * Super classes are automatically checked.
      *
@@ -60,7 +60,7 @@ public final class FieldAccessor extends ReflectionAccessor<Field> {
     }
 
     /**
-     * Sets the value of a field with matching {@link #getClazz() class type}.
+     * Sets the value of a field with matching {@link #getType() class type}.
      * <p>
      * This is the same as calling {@link #set(Object, Object) set(null, value)}.
      * <p>
@@ -74,7 +74,7 @@ public final class FieldAccessor extends ReflectionAccessor<Field> {
     }
 
     /**
-     * Sets the value of a field with matching {@link #getClazz() class type}.
+     * Sets the value of a field with matching {@link #getType() class type}.
      * <p>
      * Super classes are automatically checked.
      *

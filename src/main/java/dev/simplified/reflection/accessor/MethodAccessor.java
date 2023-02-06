@@ -28,7 +28,7 @@ public final class MethodAccessor extends ReflectionAccessor<Method> {
     }
 
     /**
-     * Gets the value of an invoked method with matching {@link #getClazz() class type}.
+     * Gets the value of an invoked method with matching {@link #getType() class type}.
      * <p>
      * Super classes are automatically checked.
      *
@@ -51,7 +51,7 @@ public final class MethodAccessor extends ReflectionAccessor<Method> {
                 });
 
             throw SimplifiedException.of(ReflectionException.class)
-                .withMessage("Unable to invoke method ''{0}'' in ''{1}'' with arguments [{2}].", this.getMethod(), this.getClazz(), arguments.build())
+                .withMessage("Unable to invoke method ''{0}'' in ''{1}'' with arguments [{2}].", this.getMethod(), this.getType(), arguments.build())
                 .withCause(exception)
                 .build();
         }

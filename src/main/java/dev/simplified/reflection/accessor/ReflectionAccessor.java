@@ -31,7 +31,7 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
         if (obj == this) return true;
         if (!(obj instanceof ReflectionAccessor<?>)) return false;
         ReflectionAccessor<?> other = (ReflectionAccessor<?>) obj;
-        return new EqualsBuilder().append(this.getClazz(), other.getClazz()).append(this.getHandle(), other.getHandle()).build();
+        return new EqualsBuilder().append(this.getType(), other.getType()).append(this.getHandle(), other.getHandle()).build();
     }
 
     public final <A extends Annotation> Optional<A> getAnnotation(Class<A> annotationClass) {
@@ -46,13 +46,13 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      * @return The class object.
      * @throws ReflectionException When the class cannot be located.
      */
-    public final Class<?> getClazz() throws ReflectionException {
-        return this.getReflection().getClazz();
+    public final Class<?> getType() throws ReflectionException {
+        return this.getReflection().getType();
     }
 
     @Override
     public final int hashCode() {
-        return new HashCodeBuilder().append(this.getClazz()).append(this.getHandle()).build();
+        return new HashCodeBuilder().append(this.getType()).append(this.getHandle()).build();
     }
 
 }

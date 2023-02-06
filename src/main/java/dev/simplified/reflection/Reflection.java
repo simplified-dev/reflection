@@ -3,6 +3,7 @@ package dev.sbs.api.reflection;
 import dev.sbs.api.reflection.accessor.ConstructorAccessor;
 import dev.sbs.api.reflection.accessor.FieldAccessor;
 import dev.sbs.api.reflection.accessor.MethodAccessor;
+import dev.sbs.api.reflection.accessor.ResourceAccessor;
 import dev.sbs.api.reflection.exception.ReflectionException;
 import dev.sbs.api.util.Primitives;
 import dev.sbs.api.util.SimplifiedException;
@@ -11,23 +12,20 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.ClassUtil;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
+import dev.sbs.api.util.helper.SystemUtil;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.CodeSource;
-import java.security.ProtectionDomain;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,190 +35,54 @@ import java.util.Map;
 @SuppressWarnings("all")
 public class Reflection<T> {
 
-    private static final double JAVA_VERSION = Double.parseDouble(ManagementFactory.getRuntimeMXBean().getSpecVersion());
     private static final Map<String, Map<Class<?>[], ConstructorAccessor>> CONSTRUCTOR_CACHE = new HashMap<>();
     private static final Map<String, Map<Class<?>, Map<Class<?>[], MethodAccessor>>> METHOD_CACHE_CLASS = new HashMap<>();
     private static final Map<String, Map<String, Map<Class<?>[], MethodAccessor>>> METHOD_CACHE_NAME = new HashMap<>();
     private static final Map<String, Map<Class<?>, FieldAccessor>> FIELD_CACHE_CLASS = new HashMap<>();
     private static final Map<String, Map<String, FieldAccessor>> FIELD_CACHE_NAME = new HashMap<>();
-    private static final Map<String, Class<?>> CLASS_CACHE = new HashMap<>();
-    private final @NotNull String packagePath;
-    @Getter private final @NotNull String subPackage;
-    @Getter private final @NotNull String clazzName;
+    //private static final Map<String, Class<?>> CLASS_CACHE = new HashMap<>();
+    @Getter private final @NotNull Class<T> type;
+
+    /**
+     * Creates a new reflection instance of {@literal packageName}.{@literal className}.
+     *
+     * @param packageName The package the {@literal className} belongs to.
+     * @param className The class name to reflect.
+     */
+    private Reflection(@NotNull String packageName, @NotNull String simplifiedName) {
+        this(FormatUtil.format("{0}.{1}", packageName, simplifiedName));
+    }
+
+    /**
+     * Creates a new reflection instance of {@literal classPath}.
+     *
+     * @param classPath The fully-qualified class path to reflect.
+     */
+    private Reflection(@NotNull String classPath) {
+        try {
+            this.type = (Class<T>) Class.forName(classPath);
+        } catch (Exception cnfex) {
+            throw SimplifiedException.of(ReflectionException.class)
+                .withCause(cnfex)
+                .build();
+        }
+    }
 
     /**
      * Creates a new reflection instance of {@literal clazz}.
      *
      * @param clazz The class to reflect.
      */
-    private Reflection(@NotNull Class<T> clazz) {
-        clazz = Primitives.wrap(clazz);
-
-        try {
-            this.clazzName = clazz.getSimpleName();
-        } catch (Exception ex) {
-            throw SimplifiedException.of(ReflectionException.class)
-                .withMessage("Unable to get simple name for ''{0}''!", clazz.getName())
-                .withCause(ex)
-                .build();
-        }
-
-        if (clazz.getPackage() != null) {
-            this.subPackage = "";
-            this.packagePath = clazz.getPackage().getName();
-        } else {
-            this.subPackage = "";
-            this.packagePath = clazz.getName().replaceAll(FormatUtil.format("\\.{0}$", this.clazzName), "");
-        }
-
-        if (!CLASS_CACHE.containsKey(this.getClazzPath()))
-            CLASS_CACHE.put(this.getClazzPath(), clazz);
-    }
-
-    /**
-     * Creates a new reflection instance of {@literal packagePath}.{@literal className}.
-     *
-     * @param className   The class name to reflect.
-     * @param packagePath The package the {@literal className} belongs to.
-     */
-    private Reflection(@NotNull String className, @NotNull String packagePath) {
-        this(className, "", packagePath);
-    }
-
-    /**
-     * Creates a new reflection instance of {@literal packagePath}.{@literal subPackage}.{@literal className}.
-     *
-     * @param className   The class name to reflect.
-     * @param subPackage  The sub package the {@literal className} belongs to.
-     * @param packagePath The package the {@literal className} belongs to.
-     */
-    private Reflection(@NotNull String className, @NotNull String subPackage, @NotNull String packagePath) {
-        this.clazzName = className;
-        this.subPackage = StringUtil.defaultString(subPackage).replaceAll("\\.$", "").replaceAll("^\\.", "");
-        this.packagePath = packagePath;
+    private Reflection(@NotNull Class<T> type) {
+        this.type = Primitives.wrap(type);
     }
 
     public static <T> Reflection<T> of(@NotNull Class<T> clazz) {
         return new Reflection<>(clazz);
     }
 
-    public static <T> Reflection<T> of(@NotNull String className, @NotNull String packagePath) {
-        return new Reflection<>(className, packagePath);
-    }
-
-    public static <T> Reflection<T> of(@NotNull String className, @NotNull String subPackage, @NotNull String packagePath) {
-        return new Reflection<>(className, subPackage, packagePath);
-    }
-
-    /**
-     * Scans all classes accessible from the {@link ClassLoader} which belong to the given package and subpackages.
-     *
-     * @param packagePath The package to scan.
-     * @return The found classes.
-     * @throws ClassNotFoundException
-     * @throws IOException
-     */
-    public static ConcurrentList<Class<?>> getClassesFromPackage(@NotNull String packagePath) {
-        try {
-            Enumeration<URL> resources = ClassUtil.getClassLoader().getResources(packagePath.replace('.', '/'));
-            ConcurrentList<File> directories = Concurrent.newList();
-            ConcurrentList<Class<?>> classes = Concurrent.newList();
-
-            // Directories
-            while (resources.hasMoreElements())
-                directories.add(new File(resources.nextElement().getFile()));
-
-            // Classes
-            for (File directory : directories)
-                classes.addAll(findClasses(directory, packagePath));
-
-            return classes;
-        } catch (IOException ignore) { }
-
-        return Concurrent.newList();
-    }
-
-    /**
-     * Recursive method used to find all classes in a given directory and subdirs.
-     *
-     * @param directory The base directory.
-     * @param packageName The package name for classes found inside the base directory.
-     * @return The found classes.
-     * @throws ClassNotFoundException
-     */
-    private static ConcurrentList<Class<?>> findClasses(File directory, String packageName) {
-        ConcurrentList<Class<?>> classes = Concurrent.newList();
-        if (!directory.exists())
-            return classes;
-
-        File[] files = directory.listFiles();
-        for (File file : files) {
-            if (file.isDirectory() && !file.getName().contains("."))
-                classes.addAll(findClasses(file, packageName + "." + file.getName()));
-            else if (file.getName().endsWith(".class")) {
-                try {
-                    classes.add(Class.forName(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
-                } catch (ClassNotFoundException ignore) { }
-            }
-        }
-
-        return classes;
-    }
-
-    /**
-     * Gets the fully-qualified class path (includes package path and class name).
-     *
-     * @return The fully-qualified class path.
-     */
-    public final String getClazzPath() {
-        return FormatUtil.format("{0}.{1}", this.getPackagePath(), this.getClazzName());
-    }
-
-    /**
-     * Gets the class object associated with this reflection object.
-     * <p>
-     * This object is cached after the first call.
-     *
-     * @return The class object.
-     * @throws ReflectionException When the class cannot be located.
-     */
-    public final Class<T> getClazz() throws ReflectionException {
-        try {
-            if (!CLASS_CACHE.containsKey(this.getClazzPath()))
-                CLASS_CACHE.put(this.getClazzPath(), Class.forName(this.getClazzPath()));
-
-            return (Class<T>) CLASS_CACHE.get(this.getClazzPath());
-        } catch (Exception ex) {
-            throw SimplifiedException.of(ReflectionException.class)
-                .withCause(ex)
-                .build();
-        }
-    }
-
-    /**
-     * Attempts to get the physical file location of a class file.
-     * <p>
-     * In cases where the file a class belongs to cannot be found,<br>
-     * or the your class is valid but the original file is obfuscated,<br>
-     * use this to locate the file location and class file name.
-     *
-     * @return The class' file location and class file name.
-     * @throws ReflectionException When the class or file cannot be located.
-     */
-    public final URL getClazzLocation() throws ReflectionException {
-        Class<?> clazz = this.getClazz();
-        ProtectionDomain domain = clazz.getProtectionDomain();
-
-        if (domain != null) {
-            CodeSource source = domain.getCodeSource();
-
-            if (source != null)
-                return source.getLocation();
-        }
-
-        throw SimplifiedException.of(ReflectionException.class)
-            .withMessage("Unable to locate the file location of ''{0}''!", clazz.getName())
-            .build();
+    public static <T> Reflection<T> of(@NotNull String packageName, @NotNull String simplifiedName) {
+        return new Reflection<>(packageName, simplifiedName);
     }
 
     /**
@@ -237,8 +99,8 @@ public class Reflection<T> {
     public final ConstructorAccessor getConstructor(Class<?>... paramTypes) throws ReflectionException {
         Class<?>[] types = toPrimitiveTypeArray(paramTypes);
 
-        if (CONSTRUCTOR_CACHE.containsKey(this.getClazzPath())) {
-            Map<Class<?>[], ConstructorAccessor> constructors = CONSTRUCTOR_CACHE.get(this.getClazzPath());
+        if (CONSTRUCTOR_CACHE.containsKey(this.getName())) {
+            Map<Class<?>[], ConstructorAccessor> constructors = CONSTRUCTOR_CACHE.get(this.getName());
 
             for (Map.Entry<Class<?>[], ConstructorAccessor> entry : constructors.entrySet()) {
                 if (Arrays.equals(entry.getKey(), types)) {
@@ -246,15 +108,15 @@ public class Reflection<T> {
                 }
             }
         } else
-            CONSTRUCTOR_CACHE.put(this.getClazzPath(), new HashMap<>());
+            CONSTRUCTOR_CACHE.put(this.getName(), new HashMap<>());
 
-        for (Constructor<?> constructor : this.getClazz().getDeclaredConstructors()) {
+        for (Constructor<?> constructor : this.getType().getDeclaredConstructors()) {
             Class<?>[] constructorTypes = toPrimitiveTypeArray(constructor.getParameterTypes());
 
             if (isEqualsTypeArray(constructorTypes, types)) {
                 constructor.setAccessible(true);
                 ConstructorAccessor constructorAccessor = new ConstructorAccessor(this, constructor);
-                CONSTRUCTOR_CACHE.get(this.getClazzPath()).put(types, constructorAccessor);
+                CONSTRUCTOR_CACHE.get(this.getName()).put(types, constructorAccessor);
                 return constructorAccessor;
             }
         }
@@ -278,24 +140,24 @@ public class Reflection<T> {
     public final FieldAccessor getField(Class<?> type) throws ReflectionException {
         Class<?> utype = (type.isPrimitive() ? Primitives.wrap(type) : Primitives.unwrap(type));
 
-        if (FIELD_CACHE_CLASS.containsKey(this.getClazzPath())) {
-            Map<Class<?>, FieldAccessor> fields = FIELD_CACHE_CLASS.get(this.getClazzPath());
+        if (FIELD_CACHE_CLASS.containsKey(this.getName())) {
+            Map<Class<?>, FieldAccessor> fields = FIELD_CACHE_CLASS.get(this.getName());
 
             if (fields.containsKey(utype))
                 return fields.get(utype);
         } else
-            FIELD_CACHE_CLASS.put(this.getClazzPath(), new HashMap<>());
+            FIELD_CACHE_CLASS.put(this.getName(), new HashMap<>());
 
-        for (Field field : this.getClazz().getDeclaredFields()) {
+        for (Field field : this.getType().getDeclaredFields()) {
             if (field.getType().equals(type) || type.isAssignableFrom(field.getType()) || field.getType().equals(utype) || utype.isAssignableFrom(field.getType())) {
                 field.setAccessible(true);
                 FieldAccessor fieldAccessor = new FieldAccessor(this, field);
-                FIELD_CACHE_CLASS.get(this.getClazzPath()).put(type, fieldAccessor);
+                FIELD_CACHE_CLASS.get(this.getName()).put(type, fieldAccessor);
                 return fieldAccessor;
             }
         }
 
-        if (this.getClazz().getSuperclass() != null)
+        if (this.getType().getSuperclass() != null)
             return this.getSuperReflection().getField(type);
 
         throw SimplifiedException.of(ReflectionException.class)
@@ -329,24 +191,24 @@ public class Reflection<T> {
      * @throws ReflectionException When the class or field cannot be located.
      */
     public final FieldAccessor getField(String name, boolean isCaseSensitive) throws ReflectionException {
-        if (FIELD_CACHE_NAME.containsKey(this.getClazzPath())) {
-            Map<String, FieldAccessor> fields = FIELD_CACHE_NAME.get(this.getClazzPath());
+        if (FIELD_CACHE_NAME.containsKey(this.getName())) {
+            Map<String, FieldAccessor> fields = FIELD_CACHE_NAME.get(this.getName());
 
             if (fields.containsKey(name))
                 return fields.get(name);
         } else
-            FIELD_CACHE_NAME.put(this.getClazzPath(), new HashMap<>());
+            FIELD_CACHE_NAME.put(this.getName(), new HashMap<>());
 
-        for (Field field : this.getClazz().getDeclaredFields()) {
+        for (Field field : this.getType().getDeclaredFields()) {
             if (isCaseSensitive ? field.getName().equals(name) : field.getName().equalsIgnoreCase(name)) {
                 field.setAccessible(true);
                 FieldAccessor fieldAccessor = new FieldAccessor(this, field);
-                FIELD_CACHE_NAME.get(this.getClazzPath()).put(name, fieldAccessor);
+                FIELD_CACHE_NAME.get(this.getName()).put(name, fieldAccessor);
                 return fieldAccessor;
             }
         }
 
-        if (this.getClazz().getSuperclass() != null)
+        if (this.getType().getSuperclass() != null)
             return this.getSuperReflection().getField(name);
 
         throw SimplifiedException.of(ReflectionException.class)
@@ -355,12 +217,34 @@ public class Reflection<T> {
     }
 
     /**
-     * Gets the current Java version as {@literal major}.{@literal minor}.
+     * Returns the URLs in the class path specified by the {@code java.class.path}
+     * {@linkplain System#getProperty system property}.
+     */
+    public static ConcurrentList<URL> getJavaClassPath() {
+        ConcurrentList<URL> urls = Concurrent.newList();
+
+        for (String entry : StringUtil.split(SystemUtil.JAVA_CLASS_PATH, SystemUtil.PATH_SEPARATOR)) {
+            try {
+                try {
+                    urls.add(new File(entry).toURI().toURL());
+                } catch (SecurityException e) { // File.toURI checks to see if the file is a directory
+                    urls.add(new URL("file", null, new File(entry).getAbsolutePath()));
+                }
+            } catch (MalformedURLException ignore) { }
+        }
+
+        return urls.toUnmodifiableList();
+    }
+
+    /**
+     * Gets the current Java Virtual Machine specification version.
+     * <br><br>
+     * Formatted as {@literal major}.{@literal minor}
      *
      * @return The current Java version.
      */
     public static double getJavaVersion() {
-        return JAVA_VERSION;
+        return Double.parseDouble(SystemUtil.JAVA_VM_SPECIFICATION_VERSION);
     }
 
     /**
@@ -379,8 +263,8 @@ public class Reflection<T> {
         Class<?> utype = (type.isPrimitive() ? Primitives.wrap(type) : Primitives.unwrap(type));
         Class<?>[] types = toPrimitiveTypeArray(paramTypes);
 
-        if (METHOD_CACHE_CLASS.containsKey(this.getClazzPath())) {
-            Map<Class<?>, Map<Class<?>[], MethodAccessor>> methods = METHOD_CACHE_CLASS.get(this.getClazzPath());
+        if (METHOD_CACHE_CLASS.containsKey(this.getName())) {
+            Map<Class<?>, Map<Class<?>[], MethodAccessor>> methods = METHOD_CACHE_CLASS.get(this.getName());
 
             if (methods.containsKey(type)) {
                 Map<Class<?>[], MethodAccessor> returnTypeMethods = methods.get(type);
@@ -391,25 +275,25 @@ public class Reflection<T> {
                     }
                 }
             } else
-                METHOD_CACHE_CLASS.get(this.getClazzPath()).put(type, new HashMap<>());
+                METHOD_CACHE_CLASS.get(this.getName()).put(type, new HashMap<>());
         } else {
-            METHOD_CACHE_CLASS.put(this.getClazzPath(), new HashMap<>());
-            METHOD_CACHE_CLASS.get(this.getClazzPath()).put(type, new HashMap<>());
+            METHOD_CACHE_CLASS.put(this.getName(), new HashMap<>());
+            METHOD_CACHE_CLASS.get(this.getName()).put(type, new HashMap<>());
         }
 
-        for (Method method : this.getClazz().getDeclaredMethods()) {
+        for (Method method : this.getType().getDeclaredMethods()) {
             Class<?>[] methodTypes = toPrimitiveTypeArray(method.getParameterTypes());
             Class<?> returnType = method.getReturnType();
 
             if ((returnType.equals(type) || type.isAssignableFrom(returnType) || returnType.equals(utype) || utype.isAssignableFrom(returnType)) && isEqualsTypeArray(methodTypes, types)) {
                 method.setAccessible(true);
                 MethodAccessor methodAccessor = new MethodAccessor(this, method);
-                METHOD_CACHE_CLASS.get(this.getClazzPath()).get(type).put(types, methodAccessor);
+                METHOD_CACHE_CLASS.get(this.getName()).get(type).put(types, methodAccessor);
                 return methodAccessor;
             }
         }
 
-        if (this.getClazz().getSuperclass() != null)
+        if (this.getType().getSuperclass() != null)
             return this.getSuperReflection().getMethod(type, paramTypes);
 
         throw SimplifiedException.of(ReflectionException.class)
@@ -451,8 +335,8 @@ public class Reflection<T> {
     public final MethodAccessor getMethod(String name, boolean isCaseSensitive, Class<?>... paramTypes) throws ReflectionException {
         Class<?>[] types = toPrimitiveTypeArray(paramTypes);
 
-        if (METHOD_CACHE_NAME.containsKey(this.getClazzPath())) {
-            Map<String, Map<Class<?>[], MethodAccessor>> methods = METHOD_CACHE_NAME.get(this.getClazzPath());
+        if (METHOD_CACHE_NAME.containsKey(this.getName())) {
+            Map<String, Map<Class<?>[], MethodAccessor>> methods = METHOD_CACHE_NAME.get(this.getName());
 
             if (methods.containsKey(name)) {
                 Map<Class<?>[], MethodAccessor> nameMethods = methods.get(name);
@@ -463,24 +347,24 @@ public class Reflection<T> {
                     }
                 }
             } else
-                METHOD_CACHE_NAME.get(this.getClazzPath()).put(name, new HashMap<>());
+                METHOD_CACHE_NAME.get(this.getName()).put(name, new HashMap<>());
         } else {
-            METHOD_CACHE_NAME.put(this.getClazzPath(), new HashMap<>());
-            METHOD_CACHE_NAME.get(this.getClazzPath()).put(name, new HashMap<>());
+            METHOD_CACHE_NAME.put(this.getName(), new HashMap<>());
+            METHOD_CACHE_NAME.get(this.getName()).put(name, new HashMap<>());
         }
 
-        for (Method method : this.getClazz().getDeclaredMethods()) {
+        for (Method method : this.getType().getDeclaredMethods()) {
             Class<?>[] methodTypes = toPrimitiveTypeArray(method.getParameterTypes());
 
             if ((isCaseSensitive ? method.getName().equals(name) : method.getName().equalsIgnoreCase(name)) && isEqualsTypeArray(methodTypes, types)) {
                 method.setAccessible(true);
                 MethodAccessor methodAccessor = new MethodAccessor(this, method);
-                METHOD_CACHE_NAME.get(this.getClazzPath()).get(name).put(types, methodAccessor);
+                METHOD_CACHE_NAME.get(this.getName()).get(name).put(types, methodAccessor);
                 return methodAccessor;
             }
         }
 
-        if (this.getClazz().getSuperclass() != null)
+        if (this.getType().getSuperclass() != null)
             return this.getSuperReflection().getMethod(name, paramTypes);
 
         throw SimplifiedException.of(ReflectionException.class)
@@ -489,12 +373,46 @@ public class Reflection<T> {
     }
 
     /**
-     * Gets the package path.
+     * Gets the fully-qualified class path (includes package path and class name).
      *
-     * @return The package path.
+     * @return The fully-qualified class path.
      */
-    public final String getPackagePath() {
-        return this.packagePath + (StringUtil.isNotEmpty(this.subPackage) ? "." + this.subPackage : "");
+    public final String getName() {
+        return FormatUtil.format("{0}.{1}", getPackageName(this.getType()), this.getType().getSimpleName());
+    }
+
+    public static String getName(String filename) {
+        int classNameEnd = filename.length() - ".class".length();
+        return filename.substring(0, classNameEnd).replace('/', '.');
+    }
+
+    /**
+     * Returns the package name of {@code clazz}.
+     * <br><br>
+     * Unlike {@link Class#getPackage}, this method only parses the class name, without
+     * attempting to define the {@link Package} and hence load files.
+     */
+    public static String getPackageName(@NotNull Class<?> type) {
+        return getPackageName(type.getName());
+    }
+
+    /**
+     * Returns the package name of {@code classFullName}.
+     * <br><br>
+     * Unlike {@link Class#getPackage}, this method only parses the class name, without
+     * attempting to define the {@link Package} and hence load files.
+     */
+    public static String getPackageName(@NotNull String classFullName) {
+        int lastDot = classFullName.lastIndexOf('.');
+        return (lastDot < 0) ? "" : classFullName.substring(0, lastDot);
+    }
+
+    public static ResourceAccessor getResources() {
+        return getResources(ClassUtil.getClassLoader());
+    }
+
+    public static ResourceAccessor getResources(@NotNull ClassLoader classLoader) {
+        return new ResourceAccessor(classLoader);
     }
 
     /**
@@ -595,14 +513,14 @@ public class Reflection<T> {
      * @throws ReflectionException When the class or superclass cannot be located.
      */
     private Reflection<?> getSuperReflection() throws ReflectionException {
-        Class<?> superClass = this.getClazz().getSuperclass();
+        Class<?> superClass = this.getType().getSuperclass();
+        String packageName = getPackageName(superClass.getName());
         String className = superClass.getSimpleName();
-        String packageName = (superClass.getPackage() != null ? superClass.getPackage().getName() : superClass.getName().replaceAll(FormatUtil.format("\\.{0}$", className), ""));
-        return of(className, packageName);
+        return of(packageName, className);
     }
 
     /**
-     * Gets the value of a field with matching {@link #getClazz() class type}.
+     * Gets the value of a field with matching {@link #getType() class type}.
      * <p>
      * The field type is automatically checked against assignable types and primitives.
      * <p>
@@ -616,11 +534,11 @@ public class Reflection<T> {
      * @throws ReflectionException When the class or field cannot be located.
      */
     public final Object getValue(Reflection<?> reflection, Object obj) throws ReflectionException {
-        return this.getValue(reflection.getClazz(), obj);
+        return this.getValue(reflection.getType(), obj);
     }
 
     /**
-     * Gets the value of a field with matching {@link #getClazz() class type}.
+     * Gets the value of a field with matching {@link #getType() class type}.
      * <p>
      * The field type is automatically checked against assignable types and primitives.
      * <p>
@@ -636,7 +554,7 @@ public class Reflection<T> {
     }
 
     /**
-     * Gets the value of a field with matching {@link #getClazz() class type}.
+     * Gets the value of a field with matching {@link #getType() class type}.
      * <p>
      * This is the same as calling {@link #getValue(String, boolean, Object) getValue(name, true, obj)}.
      * <p>
@@ -652,7 +570,7 @@ public class Reflection<T> {
     }
 
     /**
-     * Gets the value of a field with matching {@link #getClazz() class type}.
+     * Gets the value of a field with matching {@link #getType() class type}.
      * <p>
      * Super classes are automatically checked.
      *
@@ -664,17 +582,6 @@ public class Reflection<T> {
      */
     public final Object getValue(String name, boolean isCaseSensitive, Object obj) throws ReflectionException {
         return this.getField(name, isCaseSensitive).get(obj);
-    }
-
-    private static boolean isEqualsTypeArray(Class<?>[] a, Class<?>[] o) {
-        if (a.length != o.length) return false;
-
-        for (int i = 0; i < a.length; i++) {
-            if (o[i] != null && !a[i].equals(o[i]) && !a[i].isAssignableFrom(o[i]))
-                return false;
-        }
-
-        return true;
     }
 
     /**
@@ -693,7 +600,7 @@ public class Reflection<T> {
      * @throws ReflectionException When the class or method with matching arguments cannot be located.
      */
     public final Object invokeMethod(Reflection<?> reflection, Object obj, Object... args) throws ReflectionException {
-        return this.invokeMethod(reflection.getClazz(), obj, args);
+        return this.invokeMethod(reflection.getType(), obj, args);
     }
 
     /**
@@ -748,6 +655,17 @@ public class Reflection<T> {
         return this.getMethod(name, isCaseSensitive, types).invoke(obj, args);
     }
 
+    private static boolean isEqualsTypeArray(Class<?>[] a, Class<?>[] o) {
+        if (a.length != o.length) return false;
+
+        for (int i = 0; i < a.length; i++) {
+            if (o[i] != null && !a[i].equals(o[i]) && !a[i].isAssignableFrom(o[i]))
+                return false;
+        }
+
+        return true;
+    }
+
     /**
      * Creates a new instance of the current {@link #getClazz() class type} with given parameters.
      * <p>
@@ -771,7 +689,7 @@ public class Reflection<T> {
     }
 
     /**
-     * Sets the value of a field with matching {@link #getClazz() class type}.
+     * Sets the value of a field with matching {@link #getType() class type}.
      * <p>
      * The field type is automatically checked against assignable types and primitives.
      * <p>
@@ -785,11 +703,11 @@ public class Reflection<T> {
      * @throws ReflectionException When the class or field cannot be located.
      */
     public final void setValue(Reflection<?> reflection, Object obj, Object value) throws ReflectionException {
-        this.setValue(reflection.getClazz(), obj, value);
+        this.setValue(reflection.getType(), obj, value);
     }
 
     /**
-     * Sets the value of a field with matching {@link #getClazz() class type}.
+     * Sets the value of a field with matching {@link #getType() class type}.
      * <p>
      * The field type is automatically checked against assignable types and primitives.
      * <p>

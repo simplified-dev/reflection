@@ -28,7 +28,7 @@ public final class ConstructorAccessor extends ReflectionAccessor<Constructor<?>
     }
 
     /**
-     * Creates a new instance of the current {@link #getClazz() class type} with given parameters.
+     * Creates a new instance of the current {@link #getType() class type} with given parameters.
      * <p>
      * Super classes are automatically checked.
      *
@@ -49,7 +49,7 @@ public final class ConstructorAccessor extends ReflectionAccessor<Constructor<?>
                 });
 
             throw SimplifiedException.of(ReflectionException.class)
-                .withMessage("Unable to create new instance of ''{0}'' with arguments [{1}].", this.getClazz(), arguments)
+                .withMessage("Unable to create new instance of ''{0}'' with arguments [{1}].", this.getType(), arguments)
                 .withCause(exception)
                 .build();
         }
