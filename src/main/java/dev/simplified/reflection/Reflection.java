@@ -9,7 +9,6 @@ import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.ClassUtil;
-import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.PrimitiveUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.api.util.helper.SystemUtil;
@@ -50,7 +49,7 @@ public class Reflection<T> {
      * @param className The class name to reflect.
      */
     private Reflection(@NotNull String packageName, @NotNull String simplifiedName) {
-        this(FormatUtil.format("{0}.{1}", packageName, simplifiedName));
+        this(String.format("%s.%s", packageName, simplifiedName));
     }
 
     /**
@@ -122,7 +121,7 @@ public class Reflection<T> {
         }
 
         throw SimplifiedException.of(ReflectionException.class)
-            .withMessage("The constructor matching ''{0}'' was not found!", Arrays.asList(types))
+            .withMessage("The constructor matching '%s' was not found!", Arrays.asList(types))
             .build();
     }
 
@@ -161,7 +160,7 @@ public class Reflection<T> {
             return this.getSuperReflection().getField(type);
 
         throw SimplifiedException.of(ReflectionException.class)
-            .withMessage("The field with type ''{0}'' was not found!", type)
+            .withMessage("The field with type '%s' was not found!", type)
             .build();
     }
 
@@ -212,7 +211,7 @@ public class Reflection<T> {
             return this.getSuperReflection().getField(name);
 
         throw SimplifiedException.of(ReflectionException.class)
-            .withMessage("The field ''{0}'' was not found!", name)
+            .withMessage("The field '%s' was not found!", name)
             .build();
     }
 
@@ -297,7 +296,7 @@ public class Reflection<T> {
             return this.getSuperReflection().getMethod(type, paramTypes);
 
         throw SimplifiedException.of(ReflectionException.class)
-            .withMessage("The method with return type ''{0}'' was not found with parameters [''{1}'']!", type, Arrays.asList(types))
+            .withMessage("The method with return type '%s' was not found with parameters ['%s']!", type, Arrays.asList(types))
             .build();
     }
 
@@ -378,7 +377,7 @@ public class Reflection<T> {
      * @return The fully-qualified class path.
      */
     public final String getName() {
-        return FormatUtil.format("{0}.{1}", getPackageName(this.getType()), this.getType().getSimpleName());
+        return String.format("%s.%s", getPackageName(this.getType()), this.getType().getSimpleName());
     }
 
     public static String getName(String filename) {
@@ -475,7 +474,7 @@ public class Reflection<T> {
         }
 
         throw SimplifiedException.of(ReflectionException.class)
-            .withMessage("Unable to locate generic class in ''{0}'' at index {1}!", tClass.getSimpleName(), index)
+            .withMessage("Unable to locate generic class in '%s' at index %s!", tClass.getSimpleName(), index)
             .build();
     }
 

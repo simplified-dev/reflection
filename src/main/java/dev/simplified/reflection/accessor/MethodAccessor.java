@@ -51,7 +51,7 @@ public final class MethodAccessor extends ReflectionAccessor<Method> {
                 });
 
             throw SimplifiedException.of(ReflectionException.class)
-                .withMessage("Unable to invoke method ''{0}'' in ''{1}'' with arguments [{2}].", this.getMethod(), this.getType(), arguments.build())
+                .withMessage("Unable to invoke method '%s' in '%s' with arguments [%s].", this.getMethod(), this.getType(), arguments.build())
                 .withCause(exception)
                 .build();
         }

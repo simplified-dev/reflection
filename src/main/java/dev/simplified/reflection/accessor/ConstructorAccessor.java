@@ -49,7 +49,7 @@ public final class ConstructorAccessor extends ReflectionAccessor<Constructor<?>
                 });
 
             throw SimplifiedException.of(ReflectionException.class)
-                .withMessage("Unable to create new instance of ''{0}'' with arguments [{1}].", this.getType(), arguments)
+                .withMessage("Unable to create new instance of '%s' with arguments [%s].", this.getType(), arguments)
                 .withCause(exception)
                 .build();
         }
