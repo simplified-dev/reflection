@@ -76,8 +76,7 @@ public class ResourceAccessor {
             .stream()
             .filter(resourceInfo -> resourceInfo instanceof ClassInfo)
             .map(ClassInfo.class::cast)
-            .collect(Concurrent.toList())
-            .toUnmodifiableList();
+            .collect(Concurrent.toUnmodifiableList());
     }
 
     @SuppressWarnings("unchecked")
@@ -88,8 +87,7 @@ public class ResourceAccessor {
             .filter(storedType -> !storedType.equals(type))
             .filter(type::isAssignableFrom)
             .map(storedType -> (Class<T>) storedType)
-            .collect(Concurrent.toList())
-            .toUnmodifiableList();
+            .collect(Concurrent.toUnmodifiableList());
     }
 
     private static @NotNull ConcurrentMap<File, ClassLoader> getClassPathEntries(@NotNull ClassLoader classloader) {
