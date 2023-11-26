@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * Allows for cached access to hidden fields, methods and classes.
@@ -816,6 +817,7 @@ public class Reflection<T> {
                 BuildFlag flag = fieldPair.getRight();
                 boolean invalid = false;
 
+                // Null/Empty
                 if (flag.required()) {
                     Object value = field.get(builder);
 
@@ -831,12 +833,30 @@ public class Reflection<T> {
                         else if (value instanceof Map<?, ?>)
                             invalid = ((Map<?, ?>) value).isEmpty();
                     }
+
+                    if (invalid) {
+                        throw SimplifiedException.of(ReflectionException.class)
+                            .withMessage("Field '%s' is required and is null/empty!", field.getType().getSimpleName())
+                            .build();
+                    }
                 }
 
-                if (invalid) {
-                    throw SimplifiedException.of(ReflectionException.class)
-                        .withMessage("Field '%s' is required and is null/empty!", field.getType().getSimpleName())
-                        .build();
+                // Pattern
+                if (StringUtil.isNotEmpty(flag.pattern())) {
+                    Object value = field.get(builder);
+
+                    if (value == null)
+                        invalid = true;
+                    else {
+                        if (value instanceof CharSequence sequence)
+                            invalid = StringUtil.isEmpty(sequence) || !Pattern.compile(flag.pattern()).matcher(sequence).matches();
+                    }
+
+                    if (invalid) {
+                        throw SimplifiedException.of(ReflectionException.class)
+                            .withMessage("Field '%s' does not match pattern '%s'!", field.getType().getSimpleName(), flag.pattern())
+                            .build();
+                    }
                 }
             });
     }
