@@ -6,25 +6,25 @@ import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
 import java.util.Optional;
 
+@Getter
 @RequiredArgsConstructor
 abstract class ReflectionAccessor<T extends AccessibleObject> {
 
     /**
      * Gets the reflection object associated with this accessor.
      */
-    @Getter
-    private final Reflection<?> reflection;
+    private final @NotNull Reflection<?> reflection;
 
     /**
      * Gets the instance of type {@link T}.
      */
-    @Getter
-    private final T handle;
+    private final @NotNull T handle;
 
     @Override
     public final boolean equals(Object obj) {
@@ -33,7 +33,7 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
         return new EqualsBuilder().append(this.getType(), other.getType()).append(this.getHandle(), other.getHandle()).build();
     }
 
-    public final <A extends Annotation> Optional<A> getAnnotation(Class<A> annotationClass) {
+    public final <A extends Annotation> @NotNull Optional<A> getAnnotation(@NotNull Class<A> annotationClass) {
         return Optional.ofNullable(this.getHandle().isAnnotationPresent(annotationClass) ? this.getHandle().getAnnotation(annotationClass) : null);
     }
 
@@ -45,8 +45,12 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      * @return The class object.
      * @throws ReflectionException When the class cannot be located.
      */
-    public final Class<?> getType() throws ReflectionException {
+    public final @NotNull Class<?> getType() throws ReflectionException {
         return this.getReflection().getType();
+    }
+
+    public final <A extends Annotation> boolean hasAnnotation(@NotNull Class<A> annotationClass) {
+        return this.getHandle().isAnnotationPresent(annotationClass);
     }
 
     @Override

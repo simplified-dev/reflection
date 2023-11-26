@@ -4,6 +4,8 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.exception.ReflectionException;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.string.StringBuilder;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -23,7 +25,7 @@ public final class MethodAccessor extends ReflectionAccessor<Method> {
      *
      * @return The method.
      */
-    public Method getMethod() {
+    public @NotNull Method getMethod() {
         return this.getHandle();
     }
 
@@ -37,7 +39,7 @@ public final class MethodAccessor extends ReflectionAccessor<Method> {
      * @return The invoked method value with matching return type.
      * @throws ReflectionException When the method is passed invalid arguments.
      */
-    public Object invoke(Object obj, Object... args) throws ReflectionException {
+    public @Nullable Object invoke(Object obj, Object... args) throws ReflectionException {
         try {
             return this.getMethod().invoke(obj, args);
         } catch (Exception exception) {

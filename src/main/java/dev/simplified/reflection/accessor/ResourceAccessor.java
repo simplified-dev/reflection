@@ -24,10 +24,11 @@ import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+@Getter
 public class ResourceAccessor {
 
-    @Getter private final @NotNull ClassLoader classLoader;
-    @Getter private final @NotNull ConcurrentList<ResourceInfo> resources;
+    private final @NotNull ClassLoader classLoader;
+    private final @NotNull ConcurrentList<ResourceInfo> resources;
 
     public ResourceAccessor(@NotNull ClassLoader classLoader) {
         this(classLoader, null);
@@ -62,15 +63,15 @@ public class ResourceAccessor {
             .toUnmodifiableList();
     }
 
-    public ResourceAccessor filterPackage(@NotNull Class<?> type) {
+    public @NotNull ResourceAccessor filterPackage(@NotNull Class<?> type) {
         return this.filterPackage(Reflection.getPackageName(type));
     }
 
-    public ResourceAccessor filterPackage(@NotNull String packageName) {
+    public @NotNull ResourceAccessor filterPackage(@NotNull String packageName) {
         return new ResourceAccessor(this.getClassLoader(), this.getResources(), packageName);
     }
 
-    public ConcurrentList<ClassInfo> getClasses() {
+    public @NotNull ConcurrentList<ClassInfo> getClasses() {
         return this.getResources()
             .stream()
             .filter(resourceInfo -> resourceInfo instanceof ClassInfo)
@@ -80,7 +81,7 @@ public class ResourceAccessor {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> ConcurrentList<Class<T>> getSubtypesOf(@NotNull Class<T> type) {
+    public <T> @NotNull ConcurrentList<Class<T>> getSubtypesOf(@NotNull Class<T> type) {
         return this.getClasses()
             .stream()
             .map(ClassInfo::load)
@@ -91,7 +92,7 @@ public class ResourceAccessor {
             .toUnmodifiableList();
     }
 
-    private static ConcurrentMap<File, ClassLoader> getClassPathEntries(@NotNull ClassLoader classloader) {
+    private static @NotNull ConcurrentMap<File, ClassLoader> getClassPathEntries(@NotNull ClassLoader classloader) {
         ConcurrentMap<File, ClassLoader> entries = Concurrent.newMap();
 
         // Search parent first, since it's the order ClassLoader#loadClass() uses.
@@ -111,7 +112,7 @@ public class ResourceAccessor {
         return entries.toUnmodifiableMap();
     }
 
-    public static ConcurrentList<URL> getClassLoaderUrls(ClassLoader classLoader) {
+    public static @NotNull ConcurrentList<URL> getClassLoaderUrls(ClassLoader classLoader) {
         if (classLoader instanceof URLClassLoader)
             return Concurrent.newUnmodifiableList(((URLClassLoader) classLoader).getURLs());
 
@@ -128,7 +129,7 @@ public class ResourceAccessor {
      * File Specification</a>. If {@code manifest} is null, it means the jar file has no manifest, and
      * an empty set will be returned.
      */
-    public static ConcurrentSet<File> getClassPathFromManifest(File jarFile, @CheckForNull Manifest manifest) {
+    public static @NotNull ConcurrentSet<File> getClassPathFromManifest(File jarFile, @CheckForNull Manifest manifest) {
         if (manifest == null)
             return Concurrent.newSet();
 
@@ -157,7 +158,7 @@ public class ResourceAccessor {
      * File Specification</a>. Even though the specification only talks about relative urls, absolute
      * urls are actually supported too (for example, in Maven surefire plugin).
      */
-    private static URL getClassPathEntry(File jarFile, String path) throws MalformedURLException {
+    private static @NotNull URL getClassPathEntry(File jarFile, String path) throws MalformedURLException {
         return new URL(jarFile.toURI().toURL(), path);
     }
 
@@ -166,7 +167,7 @@ public class ResourceAccessor {
      * from. Callers can {@linkplain LocationInfo#scanResources scan} individual locations selectively
      * or even in parallel.
      */
-    private static ConcurrentList<LocationInfo> getLocationsFromClassLoader(@NotNull ClassLoader classLoader) {
+    private static @NotNull ConcurrentList<LocationInfo> getLocationsFromClassLoader(@NotNull ClassLoader classLoader) {
         ConcurrentList<LocationInfo> locationInfos = Concurrent.newList();
 
         for (Map.Entry<File, ClassLoader> entry : getClassPathEntries(classLoader).entrySet())
@@ -175,7 +176,7 @@ public class ResourceAccessor {
         return locationInfos.toUnmodifiableList();
     }
 
-    public static File toFile(URL url) {
+    public static @NotNull File toFile(URL url) {
         Preconditions.checkArgument(url.getProtocol().equals("file"));
 
         try {
