@@ -865,13 +865,8 @@ public class Reflection<T> {
                             invalid = optional.map(String::valueOf)
                                 .map(str -> !str.matches(flag.pattern()))
                                 .orElse(false);
-
-                            if (optional.isPresent()) {
-                                value = optional.get();
-
-                                invalid = !String.valueOf(value).matches(flag.pattern());
-                            }
-                        }
+                        } else if (Collection.class.isAssignableFrom(fieldType))
+                            invalid = ((Collection<?>) value).size() > flag.limit();
                     }
 
                     if (invalid) {
@@ -913,7 +908,7 @@ public class Reflection<T> {
             });
 
         // Handle Invalid Required
-        invalidRequired.get("_DEFAULT_")
+        invalidRequired.getOrDefault("_DEFAULT_", Concurrent.newMap())
             .stream()
             .filterValue(Boolean::booleanValue)
             .findFirst()
