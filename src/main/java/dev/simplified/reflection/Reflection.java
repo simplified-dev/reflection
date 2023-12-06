@@ -916,25 +916,24 @@ public class Reflection<T> {
                 throw SimplifiedException.of(ReflectionException.class)
                     .withMessage("Field '%s' is required and is null/empty!", pair.getKey().getField().getName())
                     .build();
-            }, () -> {
-                invalidRequired.stream()
-                    .filterKey(key -> !key.equals("_DEFAULT_"))
-                    .filter((key, fields) -> fields.stream().allMatch((field, invalid) -> invalid))
-                    .findFirst()
-                    .ifPresent(invalidGroup -> {
-                        throw SimplifiedException.of(ReflectionException.class)
-                            .withMessage(
-                                "Field group '%s' is required and [%s] is null/empty!",
-                                invalidGroup.getKey(),
-                                invalidGroup.getValue()
-                                    .stream()
-                                    .filterValue(Boolean::booleanValue)
-                                    .map((field, invalid) -> field.getField().getName())
-                                    .collect(Collectors.joining(","))
-                            )
-                            .build();
-                    });
-            });
+            }, () -> invalidRequired.stream()
+                .filterKey(key -> !key.equals("_DEFAULT_"))
+                .filter((key, fields) -> fields.stream().allMatch((field, invalid) -> invalid))
+                .findFirst()
+                .ifPresent(invalidGroup -> {
+                    throw SimplifiedException.of(ReflectionException.class)
+                        .withMessage(
+                            "Field group '%s' is required and [%s] is null/empty!",
+                            invalidGroup.getKey(),
+                            invalidGroup.getValue()
+                                .stream()
+                                .filterValue(Boolean::booleanValue)
+                                .map((field, invalid) -> field.getField().getName())
+                                .collect(Collectors.joining(","))
+                        )
+                        .build();
+                })
+            );
     }
 
 }
