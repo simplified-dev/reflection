@@ -16,7 +16,7 @@ import dev.sbs.api.util.helper.ClassUtil;
 import dev.sbs.api.util.helper.PrimitiveUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.api.util.helper.SystemUtil;
-import dev.sbs.api.util.mutable.tuple.pair.Pair;
+import dev.sbs.api.util.mutable.pair.Pair;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
