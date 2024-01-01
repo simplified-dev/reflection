@@ -844,9 +844,7 @@ public class Reflection<T> {
                 if (flag.notEmpty()) {
                     Object value = field.get(builder);
 
-                    if (value == null)
-                        invalid = true;
-                    else {
+                    if (value != null) {
                         Class<?> fieldType = field.getField().getType();
 
                         if (CharSequence.class.isAssignableFrom(fieldType))
