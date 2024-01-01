@@ -12,6 +12,7 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
+import dev.sbs.api.util.helper.ArrayUtil;
 import dev.sbs.api.util.helper.ClassUtil;
 import dev.sbs.api.util.helper.PrimitiveUtil;
 import dev.sbs.api.util.helper.StringUtil;
@@ -813,6 +814,7 @@ public class Reflection<T> {
 
     public static <T extends Builder<?>> void validateFlags(@NotNull T builder) {
         ConcurrentMap<String, ConcurrentMap<FieldAccessor, Boolean>> invalidRequired = Concurrent.newMap();
+        invalidRequired.put("_DEFAULT_", Concurrent.newMap());
 
         Reflection.of(builder.getClass())
             .getFields()
@@ -824,8 +826,22 @@ public class Reflection<T> {
                 BuildFlag flag = fieldPair.getRight();
                 boolean invalid = false;
 
-                // Null/Empty
-                if (flag.required()) {
+                // Null
+                if (flag.nonNull()) {
+                    invalid = field.get(builder) == null;
+
+                    if (ArrayUtil.isNotEmpty(flag.group())) {
+                        for (String group : flag.group()) {
+                            if (!invalidRequired.containsKey(group))
+                                invalidRequired.put(group, Concurrent.newMap());
+
+                            invalidRequired.get(group).put(field, invalid);
+                        }
+                    }
+                }
+
+                // Empty
+                if (flag.notEmpty()) {
                     Object value = field.get(builder);
 
                     if (value == null)
@@ -841,14 +857,18 @@ public class Reflection<T> {
                             invalid = ((Collection<?>) value).isEmpty();
                         else if (Map.class.isAssignableFrom(fieldType))
                             invalid = ((Map<?, ?>) value).isEmpty();
+                        else if (Object[].class.isAssignableFrom(fieldType))
+                            invalid = ArrayUtil.isEmpty((Object[]) value);
                     }
 
-                    String invalidKey = Optional.ofNullable(StringUtil.stripToNull(flag.requireGroup())).orElse("_DEFAULT_");
+                    if (ArrayUtil.isNotEmpty(flag.group())) {
+                        for (String group : flag.group()) {
+                            if (!invalidRequired.containsKey(group))
+                                invalidRequired.put(group, Concurrent.newMap());
 
-                    if (!invalidRequired.containsKey(invalidKey))
-                        invalidRequired.put(invalidKey, Concurrent.newMap());
-
-                    invalidRequired.get(invalidKey).put(field, invalid);
+                            invalidRequired.get(group).put(field, invalid);
+                        }
+                    }
                 }
 
                 // Pattern
