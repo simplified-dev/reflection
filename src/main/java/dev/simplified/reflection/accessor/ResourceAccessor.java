@@ -1,6 +1,5 @@
 package dev.sbs.api.reflection.accessor;
 
-import com.google.common.base.Preconditions;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.info.ClassInfo;
 import dev.sbs.api.reflection.info.LocationInfo;
@@ -9,12 +8,12 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
+import dev.sbs.api.util.helper.Preconditions;
 import dev.sbs.api.util.helper.StringUtil;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.CheckForNull;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -127,10 +126,7 @@ public class ResourceAccessor {
      * File Specification</a>. If {@code manifest} is null, it means the jar file has no manifest, and
      * an empty set will be returned.
      */
-    public static @NotNull ConcurrentSet<File> getClassPathFromManifest(File jarFile, @CheckForNull Manifest manifest) {
-        if (manifest == null)
-            return Concurrent.newSet();
-
+    public static @NotNull ConcurrentSet<File> getClassPathFromManifest(File jarFile, @NotNull Manifest manifest) {
         ConcurrentSet<File> builder = Concurrent.newSet();
         String classpathAttribute = manifest.getMainAttributes().getValue(Attributes.Name.CLASS_PATH.toString());
         if (classpathAttribute != null) {
@@ -174,7 +170,7 @@ public class ResourceAccessor {
         return locationInfos.toUnmodifiableList();
     }
 
-    public static @NotNull File toFile(URL url) {
+    public static @NotNull File toFile(@NotNull URL url) {
         Preconditions.checkArgument(url.getProtocol().equals("file"));
 
         try {

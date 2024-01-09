@@ -1,7 +1,7 @@
 package dev.sbs.api.reflection.info;
 
-import com.google.common.base.CharMatcher;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.util.helper.RegexUtil;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,7 +48,8 @@ public class ClassInfo extends ResourceInfo {
             String innerClassName = this.getName().substring(lastDollarSign + 1);
             // local and anonymous classes are prefixed with number (1,2,3...), anonymous classes are
             // entirely numeric whereas local classes have the user supplied name as a suffix
-            return CharMatcher.inRange('0', '9').trimLeadingFrom(innerClassName);
+
+            return RegexUtil.replaceFirst(innerClassName, "^[0-9]+", "");
         }
 
         String packageName = this.getPackageName();

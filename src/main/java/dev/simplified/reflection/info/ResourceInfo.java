@@ -1,16 +1,11 @@
 package dev.sbs.api.reflection.info;
 
-import com.google.common.io.ByteSource;
-import com.google.common.io.CharSource;
-import com.google.common.io.Resources;
 import lombok.AccessLevel;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.CheckForNull;
 import java.io.File;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
@@ -62,34 +57,13 @@ public class ResourceInfo {
         return url;
     }
 
-    /**
-     * Returns a {@link ByteSource} view of the resource from which its bytes can be read.
-     *
-     * @throws NoSuchElementException if the resource cannot be loaded through the class loader,
-     *                                despite physically existing in the class path.
-     */
-    public final @NotNull ByteSource asByteSource() {
-        return Resources.asByteSource(url());
-    }
-
-    /**
-     * Returns a {@link CharSource} view of the resource from which its bytes can be read as
-     * characters decoded with the given {@code charset}.
-     *
-     * @throws NoSuchElementException if the resource cannot be loaded through the class loader,
-     *                                despite physically existing in the class path.
-     */
-    public final @NotNull CharSource asCharSource(@NotNull Charset charset) {
-        return Resources.asCharSource(url(), charset);
-    }
-
     @Override
     public int hashCode() {
         return this.getResourceName().hashCode();
     }
 
     @Override
-    public boolean equals(@CheckForNull Object obj) {
+    public boolean equals(@NotNull Object obj) {
         if (obj instanceof ResourceInfo that)
             return this.getResourceName().equals(that.getResourceName()) && this.loader == that.loader;
 
