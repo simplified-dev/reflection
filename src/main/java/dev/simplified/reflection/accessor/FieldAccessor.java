@@ -2,7 +2,6 @@ package dev.sbs.api.reflection.accessor;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.exception.ReflectionException;
-import dev.sbs.api.util.SimplifiedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,10 +53,7 @@ public final class FieldAccessor extends ReflectionAccessor<Field> {
         try {
             return (T) this.getField().get(obj);
         } catch (Exception exception) {
-            throw SimplifiedException.of(ReflectionException.class)
-                .withMessage("Unable to get field '%s' from '%s'.", this.getField(), obj)
-                .withCause(exception)
-                .build();
+            throw new ReflectionException(exception, "Unable to get field '%s' from '%s'.", this.getField(), obj);
         }
     }
 
@@ -88,10 +84,7 @@ public final class FieldAccessor extends ReflectionAccessor<Field> {
         try {
             this.getField().set(obj, value);
         } catch (Exception exception) {
-            throw SimplifiedException.of(ReflectionException.class)
-                .withMessage("Unable to set field '%s' to '%s' in '%s'.", this.getField(), value, obj)
-                .withCause(exception)
-                .build();
+            throw new ReflectionException(exception, "Unable to set field '%s' to '%s' in '%s'.", this.getField(), value, obj);
         }
     }
 

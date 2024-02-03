@@ -1,19 +1,30 @@
 package dev.sbs.api.reflection.exception;
 
-import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.mutable.triple.Triple;
 import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.util.SimplifiedException;
+import org.intellij.lang.annotations.PrintFormat;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * {@link ReflectionException ReflectionExceptions} are thrown when the {@link Reflection} class is unable<br>
  * to perform a specific action.
  */
-public final class ReflectionException extends SimplifiedException {
+public final class ReflectionException extends RuntimeException {
 
-    private ReflectionException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace, ConcurrentList<Triple<String, String, Boolean>> fields, ConcurrentMap<String, Object> data) {
-        super(message, cause, enableSuppression, writableStackTrace, fields, data);
+    public ReflectionException(@NotNull Throwable cause) {
+        super(cause);
+    }
+
+    public ReflectionException(@NotNull String message) {
+        super(message);
+    }
+
+    public ReflectionException(@NotNull @PrintFormat String message, @Nullable Object... args) {
+        super(String.format(message, args));
+    }
+
+    public ReflectionException(@NotNull Throwable cause, @NotNull @PrintFormat String message, @Nullable Object... args) {
+        super(String.format(message, args), cause);
     }
 
 }

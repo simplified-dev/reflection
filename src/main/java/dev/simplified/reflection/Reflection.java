@@ -13,7 +13,6 @@ import dev.sbs.api.reflection.exception.ReflectionException;
 import dev.sbs.api.util.ArrayUtil;
 import dev.sbs.api.util.ClassUtil;
 import dev.sbs.api.util.PrimitiveUtil;
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.SystemUtil;
 import dev.sbs.api.util.builder.Builder;
@@ -73,9 +72,7 @@ public class Reflection<T> {
                 this.type = (Class<T>) Class.forName(classPath);
                 CLASS_CACHE.put(classPath, this.type);
             } catch (Exception cnfex) {
-                throw SimplifiedException.of(ReflectionException.class)
-                    .withCause(cnfex)
-                    .build();
+                throw new ReflectionException(cnfex);
             }
         }
     }
@@ -120,9 +117,7 @@ public class Reflection<T> {
             }
         }
 
-        throw SimplifiedException.of(ReflectionException.class)
-            .withMessage("The constructor matching '%s' was not found!", Arrays.asList(types))
-            .build();
+        throw new ReflectionException("The constructor matching '%s' was not found!", Arrays.asList(types));
     }
 
     /**
@@ -149,9 +144,7 @@ public class Reflection<T> {
         if (this.getType().getSuperclass() != null)
             return this.getSuperReflection().getField(type);
 
-        throw SimplifiedException.of(ReflectionException.class)
-            .withMessage("The field with type '%s' was not found!", type)
-            .build();
+        throw new ReflectionException("The field with type '%s' was not found!", type);
     }
 
     /**
@@ -190,9 +183,7 @@ public class Reflection<T> {
         if (this.getType().getSuperclass() != null)
             return this.getSuperReflection().getField(name);
 
-        throw SimplifiedException.of(ReflectionException.class)
-            .withMessage("The field '%s' was not found!", name)
-            .build();
+        throw new ReflectionException("The field '%s' was not found!", name);
     }
 
     /**
@@ -266,9 +257,7 @@ public class Reflection<T> {
         if (this.getType().getSuperclass() != null)
             return this.getSuperReflection().getMethod(type, paramTypes);
 
-        throw SimplifiedException.of(ReflectionException.class)
-            .withMessage("The method with return type '%s' was not found with parameters ['%s']!", type, Arrays.asList(types))
-            .build();
+        throw new ReflectionException("The method with return type '%s' was not found with parameters ['%s']!", type, Arrays.asList(types));
     }
 
     /**
@@ -317,9 +306,7 @@ public class Reflection<T> {
         if (this.getType().getSuperclass() != null)
             return this.getSuperReflection().getMethod(name, paramTypes);
 
-        throw SimplifiedException.of(ReflectionException.class)
-            .withMessage("The method ''%s'' was not found with parameters ''%s''.", name, Arrays.asList(types))
-            .build();
+        throw new ReflectionException("The method ''%s'' was not found with parameters ''%s''.", name, Arrays.asList(types));
     }
 
     /**
@@ -422,9 +409,7 @@ public class Reflection<T> {
             }
         }
 
-        throw SimplifiedException.of(ReflectionException.class)
-            .withMessage("Unable to locate generic class in '%s' at index %s!", tClass.getSimpleName(), index)
-            .build();
+        throw new ReflectionException("Unable to locate generic class in '%s' at index %s!", tClass.getSimpleName(), index);
     }
 
     /**
@@ -632,9 +617,7 @@ public class Reflection<T> {
         } catch (ReflectionException reflectionException) {
             throw reflectionException;
         } catch (Exception ex) {
-            throw SimplifiedException.of(ReflectionException.class)
-                .withCause(ex)
-                .build();
+            throw new ReflectionException(ex);
         }
     }
 
@@ -809,11 +792,8 @@ public class Reflection<T> {
                         } else if (Collection.class.isAssignableFrom(fieldType))
                             invalid = ((Collection<?>) value).size() > flag.limit();
 
-                        if (invalid) {
-                            throw SimplifiedException.of(ReflectionException.class)
-                                .withMessage("Field '%s' does not match pattern '%s'!", field.getField().getName(), flag.pattern())
-                                .build();
-                        }
+                        if (invalid)
+                            throw new ReflectionException("Field '%s' does not match pattern '%s'!", field.getField().getName(), flag.pattern());
                     }
                 }
 
@@ -839,11 +819,8 @@ public class Reflection<T> {
                             }
                         }
 
-                        if (invalid) {
-                            throw SimplifiedException.of(ReflectionException.class)
-                                .withMessage("Field '%s' does not have length of '%s' or lower!", field.getField().getName(), flag.limit())
-                                .build();
-                        }
+                        if (invalid)
+                            throw new ReflectionException("Field '%s' does not have length of '%s' or lower!", field.getField().getName(), flag.limit());
                     }
                 }
             });
@@ -854,25 +831,21 @@ public class Reflection<T> {
             .filterValue(Boolean::booleanValue)
             .findFirst()
             .ifPresentOrElse(pair -> {
-                throw SimplifiedException.of(ReflectionException.class)
-                    .withMessage("Field '%s' is required and is null/empty!", pair.getKey().getField().getName())
-                    .build();
+                throw new ReflectionException("Field '%s' is required and is null/empty!", pair.getKey().getField().getName());
             }, () -> invalidRequired.stream()
                 .filterKey(key -> !key.equals("_DEFAULT_"))
                 .filter((key, fields) -> fields.stream().allMatch((field, invalid) -> invalid))
                 .findFirst()
                 .ifPresent(invalidGroup -> {
-                    throw SimplifiedException.of(ReflectionException.class)
-                        .withMessage(
-                            "Field group '%s' is required and [%s] is null/empty!",
-                            invalidGroup.getKey(),
-                            invalidGroup.getValue()
-                                .stream()
-                                .filterValue(Boolean::booleanValue)
-                                .map((field, invalid) -> field.getField().getName())
-                                .collect(Collectors.joining(","))
-                        )
-                        .build();
+                    throw new ReflectionException(
+                        "Field group '%s' is required and [%s] is null/empty!",
+                        invalidGroup.getKey(),
+                        invalidGroup.getValue()
+                            .stream()
+                            .filterValue(Boolean::booleanValue)
+                            .map((field, invalid) -> field.getField().getName())
+                            .collect(Collectors.joining(","))
+                    );
                 })
             );
     }

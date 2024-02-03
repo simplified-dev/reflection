@@ -2,7 +2,6 @@ package dev.sbs.api.reflection.accessor;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.exception.ReflectionException;
-import dev.sbs.api.util.SimplifiedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,10 +45,7 @@ public final class ConstructorAccessor extends ReflectionAccessor<Constructor<?>
                 .map(Objects::toString)
                 .collect(Collectors.joining(","));
 
-            throw SimplifiedException.of(ReflectionException.class)
-                .withMessage("Unable to create new instance of '%s' with arguments [%s].", this.getType(), arguments)
-                .withCause(exception)
-                .build();
+            throw new ReflectionException(exception, "Unable to create new instance of '%s' with arguments [%s].", this.getType(), arguments);
         }
     }
 

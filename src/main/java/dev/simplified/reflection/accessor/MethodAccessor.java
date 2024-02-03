@@ -2,7 +2,6 @@ package dev.sbs.api.reflection.accessor;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.exception.ReflectionException;
-import dev.sbs.api.util.SimplifiedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,10 +48,7 @@ public final class MethodAccessor extends ReflectionAccessor<Method> {
                 .map(Objects::toString)
                 .forEach(arguments::add);
 
-            throw SimplifiedException.of(ReflectionException.class)
-                .withMessage("Unable to invoke method '%s' in '%s' with arguments [%s].", this.getMethod(), this.getType(), arguments.toString())
-                .withCause(exception)
-                .build();
+            throw new ReflectionException(exception, "Unable to invoke method '%s' in '%s' with arguments [%s].", this.getMethod(), this.getType(), arguments.toString());
         }
     }
 
