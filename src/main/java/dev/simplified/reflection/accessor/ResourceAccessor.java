@@ -22,6 +22,7 @@ import java.net.URLClassLoader;
 import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import java.util.stream.Stream;
 
 @Getter
 public class ResourceAccessor {
@@ -77,14 +78,25 @@ public class ResourceAccessor {
             .collect(Concurrent.toUnmodifiableList());
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> @NotNull ConcurrentList<Class<? extends T>> getSubtypesOf(@NotNull Class<T> type) {
+    private <T> @NotNull Stream<? extends Class<?>> getClassesOf(@NotNull Class<T> type) {
         return this.getClasses()
             .stream()
             .map(ClassInfo::load)
             .filter(storedType -> !storedType.equals(type))
-            .filter(type::isAssignableFrom)
+            .filter(type::isAssignableFrom);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> @NotNull ConcurrentList<Class<? extends T>> getSubtypesOf(@NotNull Class<T> type) {
+        return this.getClassesOf(type)
             .map(storedType -> (Class<? extends T>) storedType)
+            .collect(Concurrent.toUnmodifiableList());
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> @NotNull ConcurrentList<Class<T>> getTypesOf(@NotNull Class<T> type) {
+        return this.getClassesOf(type)
+            .map(storedType -> (Class<T>) storedType)
             .collect(Concurrent.toUnmodifiableList());
     }
 
