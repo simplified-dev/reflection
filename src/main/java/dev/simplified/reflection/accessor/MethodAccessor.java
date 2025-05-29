@@ -33,7 +33,15 @@ public final class MethodAccessor<T> extends ReflectionAccessor<Method> {
      */
     @Override
     public int getModifiers() {
-        return this.getMethod().getModifiers();
+        return this.getHandle().getModifiers();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NotNull String getName() {
+        return this.getHandle().getName();
     }
 
     /**

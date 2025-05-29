@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 
 /**
  * Grants simpler access to field getting and setting.
@@ -14,15 +15,6 @@ public final class FieldAccessor<T> extends ReflectionAccessor<Field> {
 
     public FieldAccessor(@NotNull Reflection<?> reflection, @NotNull Field field) {
         super(reflection, field);
-    }
-
-    /**
-     * Gets the field associated with this accessor.
-     *
-     * @return The field.
-     */
-    public @NotNull Field getField() {
-        return this.getHandle();
     }
 
     /**
@@ -58,11 +50,37 @@ public final class FieldAccessor<T> extends ReflectionAccessor<Field> {
     }
 
     /**
+     * Gets the field associated with this accessor.
+     *
+     * @return The field.
+     */
+    public @NotNull Field getField() {
+        return this.getHandle();
+    }
+
+    /**
+     * Returns a {@code Type} object that represents the declared type for the field represented by this {@code Field} object.
+     *
+     * @return The generic field type.
+     */
+    public @NotNull Type getGenericType() {
+        return this.getHandle().getGenericType();
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     public int getModifiers() {
-        return this.getField().getModifiers();
+        return this.getHandle().getModifiers();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NotNull String getName() {
+        return this.getHandle().getName();
     }
 
     /**

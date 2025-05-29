@@ -33,7 +33,15 @@ public final class ConstructorAccessor<T> extends ReflectionAccessor<Constructor
      */
     @Override
     public int getModifiers() {
-        return this.getConstructor().getModifiers();
+        return this.getHandle().getModifiers();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NotNull String getName() {
+        return this.getHandle().getName();
     }
 
     /**

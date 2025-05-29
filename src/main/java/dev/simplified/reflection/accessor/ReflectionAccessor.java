@@ -47,6 +47,11 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
     public abstract int getModifiers();
 
     /**
+     * Returns the name of the {@code T} handle.
+     */
+    public abstract @NotNull String getName();
+
+    /**
      * Gets the class object associated with this accessor.
      * <p>
      * This object is cached after the first call.
