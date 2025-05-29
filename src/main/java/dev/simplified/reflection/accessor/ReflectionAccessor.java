@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Modifier;
 import java.util.Optional;
 
 @Getter
@@ -36,6 +37,14 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
     public final <A extends Annotation> @NotNull Optional<A> getAnnotation(@NotNull Class<A> annotationClass) {
         return Optional.ofNullable(this.getHandle().isAnnotationPresent(annotationClass) ? this.getHandle().getAnnotation(annotationClass) : null);
     }
+
+    /**
+     * Returns the Java language modifiers for the handle represented
+     * by this {@code T} object, as an integer.
+     *
+     * @see Modifier
+     */
+    public abstract int getModifiers();
 
     /**
      * Gets the class object associated with this accessor.

@@ -29,6 +29,14 @@ public final class MethodAccessor<T> extends ReflectionAccessor<Method> {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getModifiers() {
+        return this.getMethod().getModifiers();
+    }
+
+    /**
      * Invokes a static method with matching {@link #getType() class type}.
      * <p>
      * Super classes are automatically checked.

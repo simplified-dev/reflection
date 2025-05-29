@@ -19,6 +19,10 @@ public final class ReflectionException extends RuntimeException {
         super(message);
     }
 
+    public ReflectionException(@NotNull Throwable cause, @NotNull String message) {
+        super(message, cause);
+    }
+
     public ReflectionException(@NotNull @PrintFormat String message, @Nullable Object... args) {
         super(String.format(message, args));
     }

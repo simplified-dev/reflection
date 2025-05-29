@@ -29,6 +29,14 @@ public final class ConstructorAccessor<T> extends ReflectionAccessor<Constructor
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getModifiers() {
+        return this.getConstructor().getModifiers();
+    }
+
+    /**
      * Creates a new instance of the current {@link #getType() class type} with given parameters.
      * <p>
      * Super classes are automatically checked.

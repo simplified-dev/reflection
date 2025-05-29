@@ -58,6 +58,14 @@ public final class FieldAccessor<T> extends ReflectionAccessor<Field> {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getModifiers() {
+        return this.getField().getModifiers();
+    }
+
+    /**
      * Sets the value of a field with matching {@link #getType() class type}.
      * <p>
      * This is the same as calling {@link #set(Object, Object) set(null, value)}.
