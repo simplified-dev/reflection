@@ -2,10 +2,14 @@ package dev.sbs.api.reflection.info;
 
 import dev.sbs.api.builder.EqualsBuilder;
 import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.SystemUtil;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.NoSuchElementException;
 
@@ -33,6 +37,10 @@ public class ResourceInfo extends FileInfo {
             return new ResourceInfo(file, resourceName, loader);
     }
 
+    public final @NotNull String getExtension() {
+        return StringUtil.getFileExtension(this.getResourceName());
+    }
+
     /**
      * Returns the url identifying the resource.
      *
@@ -41,7 +49,7 @@ public class ResourceInfo extends FileInfo {
      * @throws NoSuchElementException if the resource cannot be loaded through the class loader,
      *                                despite physically existing in the class path.
      */
-    public final @NotNull URL url() {
+    public final @NotNull URL getUrl() {
         URL url = this.getClassLoader().getResource(this.getResourceName());
 
         if (url == null)
@@ -69,6 +77,14 @@ public class ResourceInfo extends FileInfo {
             .appendSuper(super.hashCode())
             .append(this.getResourceName())
             .build();
+    }
+
+    public byte[] toBytes() {
+        return SystemUtil.readResource(this.getResourceName());
+    }
+
+    public @Nullable InputStream toStream() {
+        return SystemUtil.getResource(this.getResourceName());
     }
 
     @Override
