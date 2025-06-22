@@ -86,6 +86,13 @@ public class ResourceAccessor {
             .filter(type::isAssignableFrom);
     }
 
+    public @NotNull ConcurrentList<ResourceInfo> getResources(@NotNull String directory) {
+        return this.getResources()
+            .stream()
+            .filter(resourceInfo -> resourceInfo.getResourceName().startsWith(directory))
+            .collect(Concurrent.toUnmodifiableList());
+    }
+
     @SuppressWarnings("unchecked")
     public <T> @NotNull ConcurrentList<Class<? extends T>> getSubtypesOf(@NotNull Class<T> type) {
         return this.getClassesOf(type)
