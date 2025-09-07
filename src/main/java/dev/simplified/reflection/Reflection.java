@@ -14,6 +14,7 @@ import dev.sbs.api.reflection.exception.ReflectionException;
 import dev.sbs.api.stream.pair.Pair;
 import dev.sbs.api.util.ArrayUtil;
 import dev.sbs.api.util.ClassUtil;
+import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.PrimitiveUtil;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.SystemUtil;
@@ -798,6 +799,12 @@ public class Reflection<R> {
                                 invalid = optional.map(String::valueOf)
                                     .map(StringUtil::length)
                                     .map(length -> length > flag.limit())
+                                    .orElse(false);
+                            } else if (Number.class.isAssignableFrom((Class<?>) actualType)) {
+                                invalid = optional.map(String::valueOf)
+                                    .map(NumberUtil::createNumber)
+                                    .map(Number::intValue)
+                                    .map(number -> number > flag.limit())
                                     .orElse(false);
                             }
                         }
