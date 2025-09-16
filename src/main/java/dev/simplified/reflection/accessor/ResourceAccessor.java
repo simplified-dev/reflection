@@ -58,8 +58,7 @@ public class ResourceAccessor {
 
         this.resources = resources.stream()
             .filter(resourceInfo -> resourceInfo.getResourceName().startsWith(resourceName))
-            .collect(Concurrent.toList())
-            .toUnmodifiableList();
+            .collect(Concurrent.toUnmodifiableList());
     }
 
     public @NotNull ResourceAccessor filterPackage(@NotNull Class<?> type) {
