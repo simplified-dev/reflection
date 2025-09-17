@@ -836,7 +836,7 @@ public class Reflection<R> {
                         invalidGroup.getValue()
                             .stream()
                             .filterValue(Boolean::booleanValue)
-                            .map((field, invalid) -> field.getField().getName())
+                            .mapToObj((field, invalid) -> field.getField().getName())
                             .collect(Collectors.joining(","))
                     );
                 })
