@@ -1,7 +1,10 @@
 package dev.sbs.api.reflection.accessor;
 
+import dev.sbs.api.builder.EqualsBuilder;
+import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.exception.ReflectionException;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,10 +16,35 @@ import java.util.StringJoiner;
 /**
  * Grants simpler access to method invoking.
  */
-public final class MethodAccessor<T> extends ReflectionAccessor<Method> {
+@Getter
+public final class MethodAccessor<T> implements Accessor<Method> {
 
+    /**
+     * Gets the reflection object associated with this accessor.
+     */
+    private final @NotNull Reflection<?> reflection;
+
+    /**
+     * Gets the underlying method handle.
+     */
+    private final @NotNull Method handle;
+
+    /**
+     * Creates a new method accessor.
+     *
+     * @param reflection the reflection instance that located this method
+     * @param method     the underlying method (must already be accessible)
+     */
     public MethodAccessor(@NotNull Reflection<?> reflection, @NotNull Method method) {
-        super(reflection, method);
+        this.reflection = reflection;
+        this.handle = method;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof Accessor<?> other)) return false;
+        return new EqualsBuilder().append(this.getType(), other.getType()).append(this.getHandle(), other.getHandle()).build();
     }
 
     /**
@@ -42,6 +70,11 @@ public final class MethodAccessor<T> extends ReflectionAccessor<Method> {
     @Override
     public @NotNull String getName() {
         return this.getHandle().getName();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder().append(this.getType()).append(this.getHandle()).build();
     }
 
     /**

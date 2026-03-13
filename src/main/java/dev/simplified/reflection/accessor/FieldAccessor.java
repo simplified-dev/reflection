@@ -1,7 +1,10 @@
 package dev.sbs.api.reflection.accessor;
 
+import dev.sbs.api.builder.EqualsBuilder;
+import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.exception.ReflectionException;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -11,10 +14,35 @@ import java.lang.reflect.Type;
 /**
  * Grants simpler access to field getting and setting.
  */
-public final class FieldAccessor<T> extends ReflectionAccessor<Field> {
+@Getter
+public final class FieldAccessor<T> implements Accessor<Field> {
 
+    /**
+     * Gets the reflection object associated with this accessor.
+     */
+    private final @NotNull Reflection<?> reflection;
+
+    /**
+     * Gets the underlying field handle.
+     */
+    private final @NotNull Field handle;
+
+    /**
+     * Creates a new field accessor.
+     *
+     * @param reflection the reflection instance that located this field
+     * @param field      the underlying field (must already be accessible)
+     */
     public FieldAccessor(@NotNull Reflection<?> reflection, @NotNull Field field) {
-        super(reflection, field);
+        this.reflection = reflection;
+        this.handle = field;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof Accessor<?> other)) return false;
+        return new EqualsBuilder().append(this.getType(), other.getType()).append(this.getHandle(), other.getHandle()).build();
     }
 
     /**
@@ -81,6 +109,11 @@ public final class FieldAccessor<T> extends ReflectionAccessor<Field> {
     @Override
     public @NotNull String getName() {
         return this.getHandle().getName();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder().append(this.getType()).append(this.getHandle()).build();
     }
 
     /**

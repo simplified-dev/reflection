@@ -1,11 +1,7 @@
 package dev.sbs.api.reflection.accessor;
 
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.exception.ReflectionException;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.annotation.Annotation;
@@ -13,29 +9,42 @@ import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Modifier;
 import java.util.Optional;
 
-@Getter
-@RequiredArgsConstructor
-abstract class ReflectionAccessor<T extends AccessibleObject> {
+/**
+ * Interface for reflection accessor wrappers.
+ * <p>
+ * Each accessor provides access to the originating {@link Reflection} instance and the
+ * underlying {@link AccessibleObject} handle (field, method, or constructor). Common
+ * modifier queries and annotation access are provided as {@code default} methods so that
+ * implementations can focus purely on their specific operations.
+ *
+ * @param <T> the {@link AccessibleObject} type wrapped by this accessor
+ */
+public interface Accessor<T extends AccessibleObject> {
 
     /**
      * Gets the reflection object associated with this accessor.
+     *
+     * @return the originating reflection instance
      */
-    private final @NotNull Reflection<?> reflection;
+    @NotNull Reflection<?> getReflection();
 
     /**
-     * Gets the instance of type {@link T}.
+     * Gets the underlying {@link AccessibleObject} handle.
+     *
+     * @return the underlying handle
      */
-    private final @NotNull T handle;
+    @NotNull T getHandle();
 
-    @Override
-    public final boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (!(obj instanceof ReflectionAccessor<?> other)) return false;
-        return new EqualsBuilder().append(this.getType(), other.getType()).append(this.getHandle(), other.getHandle()).build();
-    }
-
-    public final <A extends Annotation> @NotNull Optional<A> getAnnotation(@NotNull Class<A> annotationClass) {
-        return Optional.ofNullable(this.getHandle().isAnnotationPresent(annotationClass) ? this.getHandle().getAnnotation(annotationClass) : null);
+    /**
+     * Returns the annotation of the given type present on this handle, or an empty
+     * {@link Optional} if the annotation is not present.
+     *
+     * @param <A>             the annotation type
+     * @param annotationClass the annotation class to look for
+     * @return an {@link Optional} containing the annotation, or empty if absent
+     */
+    default <A extends Annotation> @NotNull Optional<A> getAnnotation(@NotNull Class<A> annotationClass) {
+        return Optional.ofNullable(this.getHandle().getAnnotation(annotationClass));
     }
 
     /**
@@ -44,26 +53,31 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      *
      * @see Modifier
      */
-    public abstract int getModifiers();
+    int getModifiers();
 
     /**
      * Returns the name of the {@code T} handle.
      */
-    public abstract @NotNull String getName();
+    @NotNull String getName();
 
     /**
      * Gets the class object associated with this accessor.
-     * <p>
-     * This object is cached after the first call.
      *
      * @return The class object.
      * @throws ReflectionException When the class cannot be located.
      */
-    public final @NotNull Class<?> getType() throws ReflectionException {
+    default @NotNull Class<?> getType() throws ReflectionException {
         return this.getReflection().getType();
     }
 
-    public final <A extends Annotation> boolean hasAnnotation(@NotNull Class<A> annotationClass) {
+    /**
+     * Returns {@code true} if the given annotation type is present on this handle.
+     *
+     * @param <A>             the annotation type
+     * @param annotationClass the annotation class to check for
+     * @return {@code true} if the annotation is present; {@code false} otherwise
+     */
+    default <A extends Annotation> boolean hasAnnotation(@NotNull Class<A> annotationClass) {
         return this.getHandle().isAnnotationPresent(annotationClass);
     }
 
@@ -74,7 +88,7 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      * @return {@code true} if {@code mod} includes the
      * {@code public} modifier; {@code false} otherwise.
      */
-    public final boolean isPublic() {
+    default boolean isPublic() {
         return Modifier.isPublic(this.getModifiers());
     }
 
@@ -85,7 +99,7 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      * @return {@code true} if {@code mod} includes the
      * {@code private} modifier; {@code false} otherwise.
      */
-    public final boolean isPrivate() {
+    default boolean isPrivate() {
         return Modifier.isPrivate(this.getModifiers());
     }
 
@@ -96,7 +110,7 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      * @return {@code true} if {@code mod} includes the
      * {@code protected} modifier; {@code false} otherwise.
      */
-    public final boolean isProtected() {
+    default boolean isProtected() {
         return Modifier.isProtected(this.getModifiers());
     }
 
@@ -107,7 +121,7 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      * @return {@code true} if {@code mod} includes the
      * {@code static} modifier; {@code false} otherwise.
      */
-    public final boolean isStatic() {
+    default boolean isStatic() {
         return Modifier.isStatic(this.getModifiers());
     }
 
@@ -118,7 +132,7 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      * @return {@code true} if {@code mod} includes the
      * {@code final} modifier; {@code false} otherwise.
      */
-    public final boolean isFinal() {
+    default boolean isFinal() {
         return Modifier.isFinal(this.getModifiers());
     }
 
@@ -129,7 +143,7 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      * @return {@code true} if {@code mod} includes the
      * {@code synchronized} modifier; {@code false} otherwise.
      */
-    public final boolean isSynchronized() {
+    default boolean isSynchronized() {
         return Modifier.isSynchronized(this.getModifiers());
     }
 
@@ -140,7 +154,7 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      * @return {@code true} if {@code mod} includes the
      * {@code volatile} modifier; {@code false} otherwise.
      */
-    public final boolean isVolatile() {
+    default boolean isVolatile() {
         return Modifier.isVolatile(this.getModifiers());
     }
 
@@ -151,7 +165,7 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      * @return {@code true} if {@code mod} includes the
      * {@code transient} modifier; {@code false} otherwise.
      */
-    public final boolean isTransient() {
+    default boolean isTransient() {
         return Modifier.isTransient(this.getModifiers());
     }
 
@@ -162,7 +176,7 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      * @return {@code true} if {@code mod} includes the
      * {@code native} modifier; {@code false} otherwise.
      */
-    public final boolean isNative() {
+    default boolean isNative() {
         return Modifier.isNative(this.getModifiers());
     }
 
@@ -173,7 +187,7 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      * @return {@code true} if {@code mod} includes the
      * {@code interface} modifier; {@code false} otherwise.
      */
-    public final boolean isInterface() {
+    default boolean isInterface() {
         return Modifier.isInterface(this.getModifiers());
     }
 
@@ -184,7 +198,7 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      * @return {@code true} if {@code mod} includes the
      * {@code abstract} modifier; {@code false} otherwise.
      */
-    public final boolean isAbstract() {
+    default boolean isAbstract() {
         return Modifier.isAbstract(this.getModifiers());
     }
 
@@ -195,14 +209,8 @@ abstract class ReflectionAccessor<T extends AccessibleObject> {
      * @return {@code true} if {@code mod} includes the
      * {@code strictfp} modifier; {@code false} otherwise.
      */
-    public final boolean isStrict() {
+    default boolean isStrict() {
         return Modifier.isStrict(this.getModifiers());
-    }
-
-
-    @Override
-    public final int hashCode() {
-        return new HashCodeBuilder().append(this.getType()).append(this.getHandle()).build();
     }
 
 }

@@ -24,16 +24,37 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
 
+/**
+ * Scans classpath resources reachable from a given {@link ClassLoader}, providing
+ * filtered views over the discovered {@link ResourceInfo} entries.
+ * <p>
+ * Use {@link Reflection#getResources()} to obtain an instance for the default class loader,
+ * then narrow the search with {@link #filterPackage(String)} before calling
+ * {@link #getTypesOf(Class)} or {@link #getSubtypesOf(Class)}.
+ */
 @Getter
 public class ResourceAccessor {
 
     private final @NotNull ClassLoader classLoader;
     private final @NotNull ConcurrentList<ResourceInfo> resources;
 
+    /**
+     * Creates a {@link ResourceAccessor} that scans all resources reachable from the given
+     * class loader, without any package filter.
+     *
+     * @param classLoader the class loader to scan
+     */
     public ResourceAccessor(@NotNull ClassLoader classLoader) {
         this(classLoader, null);
     }
 
+    /**
+     * Creates a {@link ResourceAccessor} that scans all resources reachable from the given
+     * class loader, optionally restricting results to a specific package.
+     *
+     * @param classLoader the class loader to scan
+     * @param packageName the dot-separated package name to filter by, or {@code null} for all resources
+     */
     public ResourceAccessor(@NotNull ClassLoader classLoader, @Nullable String packageName) {
         this.classLoader = classLoader;
         ConcurrentList<LocationInfo> locations = getLocationsFromClassLoader(classLoader);
@@ -61,14 +82,32 @@ public class ResourceAccessor {
             .collect(Concurrent.toUnmodifiableList());
     }
 
+    /**
+     * Returns a new {@link ResourceAccessor} restricted to resources within the package of
+     * the given class.
+     *
+     * @param type the class whose package is used as the filter
+     * @return a filtered resource accessor
+     */
     public @NotNull ResourceAccessor filterPackage(@NotNull Class<?> type) {
         return this.filterPackage(Reflection.getPackageName(type));
     }
 
+    /**
+     * Returns a new {@link ResourceAccessor} restricted to resources within the given package.
+     *
+     * @param packageName the dot-separated package name to filter by
+     * @return a filtered resource accessor
+     */
     public @NotNull ResourceAccessor filterPackage(@NotNull String packageName) {
         return new ResourceAccessor(this.getClassLoader(), this.getResources(), packageName);
     }
 
+    /**
+     * Returns all {@link ClassInfo} entries discovered in the scanned classpath locations.
+     *
+     * @return an unmodifiable list of class info entries
+     */
     public @NotNull ConcurrentList<ClassInfo> getClasses() {
         return this.getResources()
             .stream()
@@ -85,6 +124,12 @@ public class ResourceAccessor {
             .filter(type::isAssignableFrom);
     }
 
+    /**
+     * Returns all resources whose resource name starts with the given directory prefix.
+     *
+     * @param directory the path prefix to filter by (e.g. {@code "com/example/"})
+     * @return an unmodifiable list of matching resources
+     */
     public @NotNull ConcurrentList<ResourceInfo> getResources(@NotNull String directory) {
         return this.getResources()
             .stream()
@@ -92,6 +137,13 @@ public class ResourceAccessor {
             .collect(Concurrent.toUnmodifiableList());
     }
 
+    /**
+     * Returns all classes that are subtypes of the given type (excluding the type itself).
+     *
+     * @param <T>  the type
+     * @param type the supertype or interface to search for
+     * @return an unmodifiable list of assignable subtype classes
+     */
     @SuppressWarnings("unchecked")
     public <T> @NotNull ConcurrentList<Class<? extends T>> getSubtypesOf(@NotNull Class<T> type) {
         return this.getClassesOf(type)
@@ -99,6 +151,14 @@ public class ResourceAccessor {
             .collect(Concurrent.toUnmodifiableList());
     }
 
+    /**
+     * Returns all classes that are assignable to the given type (excluding the type itself),
+     * cast to {@code Class<T>}.
+     *
+     * @param <T>  the type
+     * @param type the supertype or interface to search for
+     * @return an unmodifiable list of matching classes cast to {@code Class<T>}
+     */
     @SuppressWarnings("unchecked")
     public <T> @NotNull ConcurrentList<Class<T>> getTypesOf(@NotNull Class<T> type) {
         return this.getClassesOf(type)
@@ -126,6 +186,15 @@ public class ResourceAccessor {
         return entries.toUnmodifiableMap();
     }
 
+    /**
+     * Returns the URLs from which the given class loader loads classes and resources.
+     * <p>
+     * For {@link URLClassLoader} instances, returns the URLs directly. For the system
+     * class loader, returns the Java class-path entries. Otherwise returns an empty list.
+     *
+     * @param classLoader the class loader to inspect
+     * @return the list of URLs, unmodifiable
+     */
     public static @NotNull ConcurrentList<URL> getClassLoaderUrls(ClassLoader classLoader) {
         if (classLoader instanceof URLClassLoader)
             return Concurrent.newUnmodifiableList(((URLClassLoader) classLoader).getURLs());
