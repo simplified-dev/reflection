@@ -126,7 +126,7 @@ public final class FieldAccessor<T> implements Accessor<Field> {
      * @param value The new value of the field.
      * @throws ReflectionException When the field cannot be located or the value does match the field type.
      */
-    public void set(@Nullable T value) throws ReflectionException {
+    public void set(@Nullable Object value) throws ReflectionException {
         this.set(null, value);
     }
 
@@ -139,7 +139,7 @@ public final class FieldAccessor<T> implements Accessor<Field> {
      * @param value The new value of the field.
      * @throws ReflectionException When the field cannot be located or the value does match the field type.
      */
-    public void set(@Nullable Object obj, @Nullable T value) throws ReflectionException {
+    public void set(@Nullable Object obj, @Nullable Object value) throws ReflectionException {
         try {
             this.getField().set(obj, value);
         } catch (Exception exception) {
