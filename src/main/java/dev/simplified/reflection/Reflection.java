@@ -34,10 +34,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 @Getter
 public class Reflection<R> {
 
-    private static final Map<String, Class<?>> CLASS_CACHE = new HashMap<>();
+    private static final Map<String, Class<?>> CLASS_CACHE = new ConcurrentHashMap<>();
     private final @NotNull Class<R> type;
     @Setter private boolean processingSuperclass = true;
 
@@ -57,7 +57,7 @@ public class Reflection<R> {
      * @param packageName The package the {@literal className} belongs to.
      * @param simplifiedName The class name to reflect.
      */
-    private Reflection(@NotNull String packageName, @NotNull String simplifiedName) {
+    public Reflection(@NotNull String packageName, @NotNull String simplifiedName) {
         this(String.format("%s.%s", packageName, simplifiedName));
     }
 
@@ -85,16 +85,8 @@ public class Reflection<R> {
      *
      * @param type The class to reflect.
      */
-    private Reflection(@NotNull Class<R> type) {
+    public Reflection(@NotNull Class<R> type) {
         this.type = PrimitiveUtil.wrap(type);
-    }
-
-    public static <R> Reflection<R> of(@NotNull Class<R> clazz) {
-        return new Reflection<>(clazz);
-    }
-
-    public static <R> Reflection<R> of(@NotNull String packageName, @NotNull String simplifiedName) {
-        return new Reflection<>(packageName, simplifiedName);
     }
 
     /**
@@ -265,7 +257,7 @@ public class Reflection<R> {
     }
 
     /**
-     * Gets a field with identically matching name and parameter types.
+     * Gets a method with identically matching name and parameter types.
      * <p>
      * The parameter types are automatically checked against assignable types and primitives.
      * <p>
@@ -283,7 +275,7 @@ public class Reflection<R> {
     }
 
     /**
-     * Gets a field with matching name and parameter types.
+     * Gets a method with matching name and parameter types.
      * <p>
      * The parameter types are automatically checked against assignable types and primitives.
      * <p>
@@ -322,6 +314,13 @@ public class Reflection<R> {
         return String.format("%s.%s", getPackageName(this.getType()), this.getType().getSimpleName());
     }
 
+    /**
+     * Converts a resource filename (e.g. {@code com/example/Foo.class}) to a
+     * fully-qualified class name (e.g. {@code com.example.Foo}).
+     *
+     * @param filename the {@code .class} resource filename to convert
+     * @return the corresponding fully-qualified class name
+     */
     public static @NotNull String getName(@NotNull String filename) {
         int classNameEnd = filename.length() - ".class".length();
         return filename.substring(0, classNameEnd).replace('/', '.');
@@ -348,10 +347,23 @@ public class Reflection<R> {
         return (lastDot < 0) ? "" : classFullName.substring(0, lastDot);
     }
 
+    /**
+     * Returns a {@link ResourceAccessor} that scans all resources reachable from the
+     * {@linkplain ClassUtil#getClassLoader() default class loader}.
+     *
+     * @return a resource accessor for the default class loader
+     */
     public static @NotNull ResourceAccessor getResources() {
         return getResources(ClassUtil.getClassLoader());
     }
 
+    /**
+     * Returns a {@link ResourceAccessor} that scans all resources reachable from the
+     * given class loader.
+     *
+     * @param classLoader the class loader to scan resources from
+     * @return a resource accessor for the given class loader
+     */
     public static @NotNull ResourceAccessor getResources(@NotNull ClassLoader classLoader) {
         return new ResourceAccessor(classLoader);
     }
@@ -447,13 +459,10 @@ public class Reflection<R> {
      * This does not check if the superclass is just a {@link Class}.
      *
      * @return The reflected superclass.
-     * @throws ReflectionException When the class or superclass cannot be located.
      */
-    private @NotNull Reflection<?> getSuperReflection() throws ReflectionException {
-        Class<?> superClass = this.getType().getSuperclass();
-        String packageName = getPackageName(superClass.getName());
-        String className = superClass.getSimpleName();
-        return of(packageName, className);
+    @SuppressWarnings("unchecked")
+    private @NotNull Reflection<?> getSuperReflection() {
+        return new Reflection<>((Class<Object>) this.getType().getSuperclass());
     }
 
     /**
@@ -522,16 +531,16 @@ public class Reflection<R> {
     }
 
     /**
-     * Gets the value of an invoked method with matching {@link #getType()} class type}.
+     * Gets the value of an invoked method with matching {@link #getType() return type}.
      * <p>
      * The method's return type is automatically checked against assignable types and primitives.
      * <p>
-     * This is the same as calling {@link #invokeMethod(Class, Object, Object...) invokeMethod(reflection.getClazz(), obj, args)}.
+     * This is the same as calling {@link #invokeMethod(Class, Object, Object...) invokeMethod(reflection.getType(), obj, args)}.
      * <p>
      * Super classes are automatically checked.
      *
-     * @param reflection The reflection object housing the field's class type.
-     * @param obj        Instance of the current class object, null if static field.
+     * @param reflection The reflection object whose {@link #getType() type} identifies the return type.
+     * @param obj        Instance of the current class object, null if static method.
      * @param args       The arguments with matching types to pass to the method.
      * @return The invoked method value with matching return type.
      * @throws ReflectionException When the class or method with matching arguments cannot be located.
@@ -541,14 +550,14 @@ public class Reflection<R> {
     }
 
     /**
-     * Gets the value of an invoked method with matching {@link #getType()} class type}.
+     * Gets the value of an invoked method with matching {@link #getType() return type}.
      * <p>
      * The method's return type is automatically checked against assignable types and primitives.
      * <p>
      * Super classes are automatically checked.
      *
      * @param type The return type to look for.
-     * @param obj  Instance of the current class object, null if static field.
+     * @param obj  Instance of the current class object, null if static method.
      * @param args The arguments with matching types to pass to the method.
      * @return The invoked method value with matching return type.
      * @throws ReflectionException When the class or method with matching arguments cannot be located.
@@ -561,12 +570,12 @@ public class Reflection<R> {
     /**
      * Gets the value of an invoked method with identically matching name.
      * <p>
-     * This is the same as calling {@link #invokeMethod(String, boolean, Object, Object...) getValue(name, true, obj, args)}.
+     * This is the same as calling {@link #invokeMethod(String, boolean, Object, Object...) invokeMethod(name, true, obj, args)}.
      * <p>
      * Super classes are automatically checked.
      *
-     * @param name The field name to look for.
-     * @param obj  Instance of the current class object, null if static field.
+     * @param name The method name to look for.
+     * @param obj  Instance of the current class object, null if static method.
      * @param args The arguments with matching types to pass to the method.
      * @return The invoked method value with identically matching name.
      * @throws ReflectionException When the class or method with matching arguments cannot be located.
@@ -576,15 +585,15 @@ public class Reflection<R> {
     }
 
     /**
-     * Gets the value of an invoked method with identically matching name.
+     * Gets the value of an invoked method with matching name.
      * <p>
      * Super classes are automatically checked.
      *
-     * @param name            The field name to look for.
+     * @param name            The method name to look for.
      * @param isCaseSensitive Whether or not to check case-sensitively.
-     * @param obj             Instance of the current class object, null if static field.
+     * @param obj             Instance of the current class object, null if static method.
      * @param args            The arguments with matching types to pass to the method.
-     * @return The invoked method value with identically matching name.
+     * @return The invoked method value with matching name.
      * @throws ReflectionException When the class or method with matching arguments cannot be located.
      */
     public final @Nullable Object invokeMethod(@NotNull String name, boolean isCaseSensitive, @Nullable Object obj, @Nullable Object... args) throws ReflectionException {
@@ -706,7 +715,7 @@ public class Reflection<R> {
         ConcurrentMap<String, ConcurrentMap<FieldAccessor<?>, Boolean>> invalidRequired = Concurrent.newMap();
         invalidRequired.put("_DEFAULT_", Concurrent.newMap());
 
-        Reflection.of(builder.getClass())
+        new Reflection<>(builder.getClass())
             .getFields()
             .stream()
             .filter(fieldAccessor -> fieldAccessor.hasAnnotation(BuildFlag.class))
@@ -715,10 +724,11 @@ public class Reflection<R> {
                 FieldAccessor<?> field = fieldPair.getLeft();
                 BuildFlag flag = fieldPair.getRight();
                 boolean invalid = false;
+                Object value = field.get(builder);
 
                 // Null
                 if (flag.nonNull()) {
-                    invalid = field.get(builder) == null;
+                    invalid = value == null;
 
                     if (ArrayUtil.isNotEmpty(flag.group())) {
                         for (String group : flag.group()) {
@@ -732,8 +742,6 @@ public class Reflection<R> {
 
                 // Empty
                 if (flag.notEmpty()) {
-                    Object value = field.get(builder);
-
                     if (value != null) {
                         Class<?> fieldType = field.getField().getType();
 
@@ -761,8 +769,6 @@ public class Reflection<R> {
 
                 // Pattern
                 if (StringUtil.isNotEmpty(flag.pattern())) {
-                    Object value = field.get(builder);
-
                     if (value != null) {
                         Class<?> fieldType = field.getField().getType();
 
@@ -783,8 +789,6 @@ public class Reflection<R> {
 
                 // Length Limit
                 if (flag.limit() >= 0) {
-                    Object value = field.get(builder);
-
                     if (value != null) {
                         Class<?> fieldType = field.getField().getType();
 
