@@ -44,10 +44,10 @@ public class LocationInfo extends FileInfo {
      * <p>Note that when you call {@code location.scanResources(scannedFiles)}, the location will
      * always be scanned even if {@code scannedFiles} already contains it.
      */
-    public @NotNull ConcurrentSet<ResourceInfo> scanResources(ConcurrentSet<File> scannedFiles) {
+    public @NotNull ConcurrentSet<ResourceInfo> scanResources(@NotNull ConcurrentSet<File> scannedFiles) {
         ConcurrentSet<ResourceInfo> builder = Concurrent.newSet();
         scannedFiles.add(this.getFile());
-        scan(this.getFile(), scannedFiles, builder);
+        this.scan(this.getFile(), scannedFiles, builder);
         return builder.toUnmodifiableSet();
     }
 
@@ -61,9 +61,9 @@ public class LocationInfo extends FileInfo {
         }
 
         if (file.isDirectory())
-            scanDirectory(file, builder);
+            this.scanDirectory(file, builder);
         else
-            scanJar(file, scannedUris, builder);
+            this.scanJar(file, scannedUris, builder);
     }
 
     private void scanJar(@NotNull File file, @NotNull ConcurrentSet<File> scannedUris, @NotNull ConcurrentSet<ResourceInfo> builder) {
@@ -84,7 +84,7 @@ public class LocationInfo extends FileInfo {
                 }
             }
             this.scanJarFile(jarFile, builder);
-        } catch (IOException ignore) {
+        } catch (Exception ignore) {
         } finally {
             try {
                 jarFile.close();
