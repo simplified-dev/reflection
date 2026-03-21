@@ -47,8 +47,40 @@ import java.util.stream.Collectors;
 public class Reflection<R> {
 
     private static final ConcurrentMap<String, Class<?>> CLASS_CACHE = Concurrent.newMap();
+    private static final ConcurrentMap<Class<?>, Field[]> DECLARED_FIELDS_CACHE = Concurrent.newMap();
+    private static final ConcurrentMap<Class<?>, Method[]> DECLARED_METHODS_CACHE = Concurrent.newMap();
+    private static final ConcurrentMap<Class<?>, Constructor<?>[]> DECLARED_CONSTRUCTORS_CACHE = Concurrent.newMap();
+    private static final ConcurrentMap<Class<?>, ConcurrentSet<FieldAccessor<?>>> ALL_FIELDS_CACHE = Concurrent.newMap();
+    private static final ConcurrentMap<Class<?>, ConcurrentList<BuildFlagEntry>> BUILD_FLAG_CACHE = Concurrent.newMap();
+    private static final ConcurrentMap<Pair<Class<?>, Integer>, Class<?>> SUPER_CLASS_CACHE = Concurrent.newMap();
     private final @NotNull Class<R> type;
     @Setter private boolean processingSuperclass = true;
+
+    private record BuildFlagEntry(@NotNull FieldAccessor<?> fieldAccessor, @NotNull BuildFlag flag) { }
+
+    private static Field[] getDeclaredFieldsCached(@NotNull Class<?> type) {
+        return DECLARED_FIELDS_CACHE.computeIfAbsent(type, cls -> {
+            Field[] fields = cls.getDeclaredFields();
+            for (Field f : fields) f.setAccessible(true);
+            return fields;
+        });
+    }
+
+    private static Method[] getDeclaredMethodsCached(@NotNull Class<?> type) {
+        return DECLARED_METHODS_CACHE.computeIfAbsent(type, cls -> {
+            Method[] methods = cls.getDeclaredMethods();
+            for (Method m : methods) m.setAccessible(true);
+            return methods;
+        });
+    }
+
+    private static Constructor<?>[] getDeclaredConstructorsCached(@NotNull Class<?> type) {
+        return DECLARED_CONSTRUCTORS_CACHE.computeIfAbsent(type, cls -> {
+            Constructor<?>[] constructors = cls.getDeclaredConstructors();
+            for (Constructor<?> c : constructors) c.setAccessible(true);
+            return constructors;
+        });
+    }
 
     /**
      * Creates a new reflection instance of {@literal packageName}.{@literal className}.
@@ -103,13 +135,11 @@ public class Reflection<R> {
     public final ConstructorAccessor<R> getConstructor(Class<?>... paramTypes) throws ReflectionException {
         Class<?>[] types = toPrimitiveTypeArray(paramTypes);
 
-        for (Constructor<?> constructor : this.getType().getDeclaredConstructors()) {
+        for (Constructor<?> constructor : getDeclaredConstructorsCached(this.getType())) {
             Class<?>[] constructorTypes = toPrimitiveTypeArray(constructor.getParameterTypes());
 
-            if (isEqualsTypeArray(constructorTypes, types)) {
-                constructor.setAccessible(true);
+            if (isEqualsTypeArray(constructorTypes, types))
                 return new ConstructorAccessor<R>(this, (Constructor<R>) constructor);
-            }
         }
 
         throw new ReflectionException("The constructor matching '%s' was not found!", Arrays.asList(types));
@@ -129,11 +159,9 @@ public class Reflection<R> {
     public final <T> @NotNull FieldAccessor<T> getField(@NotNull Class<T> type) throws ReflectionException {
         Class<?> utype = (type.isPrimitive() ? PrimitiveUtil.wrap(type) : PrimitiveUtil.unwrap(type));
 
-        for (Field field : this.getType().getDeclaredFields()) {
-            if (field.getType().equals(type) || type.isAssignableFrom(field.getType()) || field.getType().equals(utype) || utype.isAssignableFrom(field.getType())) {
-                field.setAccessible(true);
+        for (Field field : getDeclaredFieldsCached(this.getType())) {
+            if (field.getType().equals(type) || type.isAssignableFrom(field.getType()) || field.getType().equals(utype) || utype.isAssignableFrom(field.getType()))
                 return new FieldAccessor<>(this, field);
-            }
         }
 
         if (this.isProcessingSuperclass() && this.getType().getSuperclass() != null)
@@ -168,11 +196,9 @@ public class Reflection<R> {
      * @throws ReflectionException When the class or field cannot be located.
      */
     public final <T> @NotNull FieldAccessor<T> getField(@NotNull String name, boolean isCaseSensitive) throws ReflectionException {
-        for (Field field : this.getType().getDeclaredFields()) {
-            if (isCaseSensitive ? field.getName().equals(name) : field.getName().equalsIgnoreCase(name)) {
-                field.setAccessible(true);
+        for (Field field : getDeclaredFieldsCached(this.getType())) {
+            if (isCaseSensitive ? field.getName().equals(name) : field.getName().equalsIgnoreCase(name))
                 return new FieldAccessor<>(this, field);
-            }
         }
 
         if (this.isProcessingSuperclass() && this.getType().getSuperclass() != null)
@@ -189,18 +215,32 @@ public class Reflection<R> {
      * @return All fields.
      * @throws ReflectionException When the class or fields cannot be located.
      */
+    @SuppressWarnings("unchecked")
     public final @NotNull ConcurrentSet<FieldAccessor<?>> getFields() throws ReflectionException {
-        ConcurrentSet<FieldAccessor<?>> fieldAccessors = Concurrent.newSet();
+        if (!this.isProcessingSuperclass()) {
+            ConcurrentSet<FieldAccessor<?>> fieldAccessors = Concurrent.newSet();
 
-        for (Field field : this.getType().getDeclaredFields()) {
-            field.setAccessible(true);
-            fieldAccessors.add(new FieldAccessor<>(this, field));
+            for (Field field : getDeclaredFieldsCached(this.getType()))
+                fieldAccessors.add(new FieldAccessor<>(this, field));
+
+            return fieldAccessors;
         }
 
-        if (this.isProcessingSuperclass() && this.getType().getSuperclass() != null)
-            fieldAccessors.addAll(this.getSuperReflection().getFields());
+        return ALL_FIELDS_CACHE.computeIfAbsent(this.getType(), cls -> {
+            ConcurrentSet<FieldAccessor<?>> fieldAccessors = Concurrent.newSet();
+            Class<?> current = cls;
 
-        return fieldAccessors;
+            while (current != null) {
+                Reflection<?> ref = (current == cls) ? this : new Reflection<>((Class<Object>) current);
+
+                for (Field field : getDeclaredFieldsCached(current))
+                    fieldAccessors.add(new FieldAccessor<>(ref, field));
+
+                current = current.getSuperclass();
+            }
+
+            return fieldAccessors.toUnmodifiableSet();
+        });
     }
 
     /**
@@ -239,14 +279,12 @@ public class Reflection<R> {
         Class<?> utype = (type.isPrimitive() ? PrimitiveUtil.wrap(type) : PrimitiveUtil.unwrap(type));
         Class<?>[] types = toPrimitiveTypeArray(paramTypes);
 
-        for (Method method : this.getType().getDeclaredMethods()) {
+        for (Method method : getDeclaredMethodsCached(this.getType())) {
             Class<?>[] methodTypes = toPrimitiveTypeArray(method.getParameterTypes());
             Class<?> returnType = method.getReturnType();
 
-            if ((returnType.equals(type) || type.isAssignableFrom(returnType) || returnType.equals(utype) || utype.isAssignableFrom(returnType)) && isEqualsTypeArray(methodTypes, types)) {
-                method.setAccessible(true);
+            if ((returnType.equals(type) || type.isAssignableFrom(returnType) || returnType.equals(utype) || utype.isAssignableFrom(returnType)) && isEqualsTypeArray(methodTypes, types))
                 return new MethodAccessor<>(this, method);
-            }
         }
 
         if (this.isProcessingSuperclass() && this.getType().getSuperclass() != null)
@@ -289,13 +327,11 @@ public class Reflection<R> {
     public final @NotNull MethodAccessor<?> getMethod(@NotNull String name, boolean isCaseSensitive, @Nullable Class<?>... paramTypes) throws ReflectionException {
         Class<?>[] types = toPrimitiveTypeArray(paramTypes);
 
-        for (Method method : this.getType().getDeclaredMethods()) {
+        for (Method method : getDeclaredMethodsCached(this.getType())) {
             Class<?>[] methodTypes = toPrimitiveTypeArray(method.getParameterTypes());
 
-            if ((isCaseSensitive ? method.getName().equals(name) : method.getName().equalsIgnoreCase(name)) && isEqualsTypeArray(methodTypes, types)) {
-                method.setAccessible(true);
+            if ((isCaseSensitive ? method.getName().equals(name) : method.getName().equalsIgnoreCase(name)) && isEqualsTypeArray(methodTypes, types))
                 return new MethodAccessor<>(this, method);
-            }
         }
 
         if (this.isProcessingSuperclass() && this.getType().getSuperclass() != null)
@@ -411,20 +447,24 @@ public class Reflection<R> {
      */
     @SuppressWarnings("unchecked")
     public static <U> @NotNull Class<U> getSuperClass(@NotNull Class<?> tClass, int index) {
-        try { // Classes
-            ParameterizedType superClass = (ParameterizedType) tClass.getGenericSuperclass();
-            return (Class<U>) superClass.getActualTypeArguments()[index];
-        } catch (ClassCastException exception) { // Types
-            try {
-                for (Type type : tClass.getGenericInterfaces()) {
-                    if (type instanceof ParameterizedType superClass)
-                        return (Class<U>) superClass.getActualTypeArguments()[index];
+        Class<?> cached = SUPER_CLASS_CACHE.computeIfAbsent(Pair.of(tClass, index), key -> {
+            try { // Classes
+                ParameterizedType superClass = (ParameterizedType) key.getKey().getGenericSuperclass();
+                return (Class<?>) superClass.getActualTypeArguments()[key.getValue()];
+            } catch (ClassCastException exception) { // Types
+                try {
+                    for (Type type : key.getKey().getGenericInterfaces()) {
+                        if (type instanceof ParameterizedType superClass)
+                            return (Class<?>) superClass.getActualTypeArguments()[key.getValue()];
+                    }
+                } catch (Exception ignore) {
                 }
-            } catch (Exception ignore) {
             }
-        }
 
-        throw new ReflectionException("Unable to locate generic class in '%s' at index %s!", tClass.getSimpleName(), index);
+            throw new ReflectionException("Unable to locate generic class in '%s' at index %s!", key.getKey().getSimpleName(), key.getValue());
+        });
+
+        return (Class<U>) cached;
     }
 
     /**
@@ -710,114 +750,121 @@ public class Reflection<R> {
         return newTypes;
     }
 
+    @SuppressWarnings("all")
     public static <T extends ClassBuilder<?>> void validateFlags(@NotNull T builder) {
         ConcurrentMap<String, ConcurrentMap<FieldAccessor<?>, Boolean>> invalidRequired = Concurrent.newMap();
         invalidRequired.put("_DEFAULT_", Concurrent.newMap());
 
-        new Reflection<>(builder.getClass())
-            .getFields()
-            .stream()
-            .filter(fieldAccessor -> fieldAccessor.hasAnnotation(BuildFlag.class))
-            .expandToPair(fieldAccessor -> Pair.of(fieldAccessor, fieldAccessor.getAnnotation(BuildFlag.class).orElseThrow()))
-            .forEach((field, flag) -> {
-                boolean invalid = false;
-                Object value = field.get(builder);
+        ConcurrentList<BuildFlagEntry> entries = BUILD_FLAG_CACHE.computeIfAbsent(builder.getClass(), cls ->
+            new Reflection<>(cls)
+                .getFields()
+                .stream()
+                .filter(fieldAccessor -> fieldAccessor.hasAnnotation(BuildFlag.class))
+                .map(fieldAccessor -> new BuildFlagEntry(fieldAccessor, fieldAccessor.getAnnotation(BuildFlag.class).orElseThrow()))
+                .collect(Concurrent.toUnmodifiableList())
+        );
 
-                // Null
-                if (flag.nonNull()) {
-                    invalid = value == null;
+        entries.forEach(entry -> {
+            FieldAccessor<?> field = entry.fieldAccessor();
+            BuildFlag flag = entry.flag();
+            boolean invalid = false;
+            Object value = field.get(builder);
 
-                    if (ArrayUtil.isNotEmpty(flag.group())) {
-                        for (String group : flag.group()) {
-                            if (!invalidRequired.containsKey(group))
-                                invalidRequired.put(group, Concurrent.newMap());
+            // Null
+            if (flag.nonNull()) {
+                invalid = value == null;
 
-                            invalidRequired.get(group).put(field, invalid);
-                        }
+                if (ArrayUtil.isNotEmpty(flag.group())) {
+                    for (String group : flag.group()) {
+                        if (!invalidRequired.containsKey(group))
+                            invalidRequired.put(group, Concurrent.newMap());
+
+                        invalidRequired.get(group).put(field, invalid);
                     }
                 }
+            }
 
-                // Empty
-                if (flag.notEmpty()) {
-                    if (value != null) {
-                        Class<?> fieldType = field.getField().getType();
+            // Empty
+            if (flag.notEmpty()) {
+                if (value != null) {
+                    Class<?> fieldType = field.getField().getType();
 
-                        if (CharSequence.class.isAssignableFrom(fieldType))
-                            invalid = StringUtil.isEmpty((CharSequence) value);
-                        else if (Optional.class.isAssignableFrom(fieldType))
-                            invalid = ((Optional<?>) value).isEmpty();
-                        else if (Collection.class.isAssignableFrom(fieldType))
-                            invalid = ((Collection<?>) value).isEmpty();
-                        else if (Map.class.isAssignableFrom(fieldType))
-                            invalid = ((Map<?, ?>) value).isEmpty();
-                        else if (Object[].class.isAssignableFrom(fieldType))
-                            invalid = ArrayUtil.isEmpty((Object[]) value);
-                    }
-
-                    if (ArrayUtil.isNotEmpty(flag.group())) {
-                        for (String group : flag.group()) {
-                            if (!invalidRequired.containsKey(group))
-                                invalidRequired.put(group, Concurrent.newMap());
-
-                            invalidRequired.get(group).put(field, invalid);
-                        }
-                    }
+                    if (CharSequence.class.isAssignableFrom(fieldType))
+                        invalid = StringUtil.isEmpty((CharSequence) value);
+                    else if (Optional.class.isAssignableFrom(fieldType))
+                        invalid = ((Optional<?>) value).isEmpty();
+                    else if (Collection.class.isAssignableFrom(fieldType))
+                        invalid = ((Collection<?>) value).isEmpty();
+                    else if (Map.class.isAssignableFrom(fieldType))
+                        invalid = ((Map<?, ?>) value).isEmpty();
+                    else if (Object[].class.isAssignableFrom(fieldType))
+                        invalid = ArrayUtil.isEmpty((Object[]) value);
                 }
 
-                // Pattern
-                if (StringUtil.isNotEmpty(flag.pattern())) {
-                    if (value != null) {
-                        Class<?> fieldType = field.getField().getType();
+                if (ArrayUtil.isNotEmpty(flag.group())) {
+                    for (String group : flag.group()) {
+                        if (!invalidRequired.containsKey(group))
+                            invalidRequired.put(group, Concurrent.newMap());
 
-                        if (CharSequence.class.isAssignableFrom(fieldType)) {
-                            CharSequence sequence = (CharSequence) value;
-                            invalid = StringUtil.isEmpty(sequence) || !Pattern.compile(flag.pattern()).matcher(sequence).matches();
-                        } else if (value instanceof Optional<?> optional) {
+                        invalidRequired.get(group).put(field, invalid);
+                    }
+                }
+            }
+
+            // Pattern
+            if (StringUtil.isNotEmpty(flag.pattern())) {
+                if (value != null) {
+                    Class<?> fieldType = field.getField().getType();
+
+                    if (CharSequence.class.isAssignableFrom(fieldType)) {
+                        CharSequence sequence = (CharSequence) value;
+                        invalid = StringUtil.isEmpty(sequence) || !Pattern.compile(flag.pattern()).matcher(sequence).matches();
+                    } else if (value instanceof Optional<?> optional) {
+                        invalid = optional.map(String::valueOf)
+                            .map(str -> !str.matches(flag.pattern()))
+                            .orElse(false);
+                    } else if (Collection.class.isAssignableFrom(fieldType))
+                        invalid = ((Collection<?>) value).size() > flag.limit();
+
+                    if (invalid)
+                        throw new ReflectionException("Field '%s' does not match pattern '%s'!", field.getField().getName(), flag.pattern());
+                }
+            }
+
+            // Length Limit
+            if (flag.limit() >= 0) {
+                if (value != null) {
+                    Class<?> fieldType = field.getField().getType();
+
+                    if (CharSequence.class.isAssignableFrom(fieldType)) {
+                        CharSequence sequence = (CharSequence) value;
+                        invalid = StringUtil.length(sequence) > flag.limit();
+                    } else if (Collection.class.isAssignableFrom(fieldType)) {
+                        Collection<?> collection = (Collection<?>) value;
+                        invalid = collection.size() > flag.limit();
+                    } else if (value instanceof Optional<?> optional) {
+                        final ParameterizedType parameterizedType = (ParameterizedType) field.getField().getGenericType();
+                        final Type actualType = parameterizedType.getActualTypeArguments()[0];
+
+                        if (String.class.isAssignableFrom((Class<?>) actualType)) {
                             invalid = optional.map(String::valueOf)
-                                .map(str -> !str.matches(flag.pattern()))
+                                .map(StringUtil::length)
+                                .map(length -> length > flag.limit())
                                 .orElse(false);
-                        } else if (Collection.class.isAssignableFrom(fieldType))
-                            invalid = ((Collection<?>) value).size() > flag.limit();
-
-                        if (invalid)
-                            throw new ReflectionException("Field '%s' does not match pattern '%s'!", field.getField().getName(), flag.pattern());
-                    }
-                }
-
-                // Length Limit
-                if (flag.limit() >= 0) {
-                    if (value != null) {
-                        Class<?> fieldType = field.getField().getType();
-
-                        if (CharSequence.class.isAssignableFrom(fieldType)) {
-                            CharSequence sequence = (CharSequence) value;
-                            invalid = StringUtil.length(sequence) > flag.limit();
-                        } else if (Collection.class.isAssignableFrom(fieldType)) {
-                            Collection<?> collection = (Collection<?>) value;
-                            invalid = collection.size() > flag.limit();
-                        } else if (value instanceof Optional<?> optional) {
-                            final ParameterizedType parameterizedType = (ParameterizedType) field.getField().getGenericType();
-                            final Type actualType = parameterizedType.getActualTypeArguments()[0];
-
-                            if (String.class.isAssignableFrom((Class<?>) actualType)) {
-                                invalid = optional.map(String::valueOf)
-                                    .map(StringUtil::length)
-                                    .map(length -> length > flag.limit())
-                                    .orElse(false);
-                            } else if (Number.class.isAssignableFrom((Class<?>) actualType)) {
-                                invalid = optional.map(String::valueOf)
-                                    .map(NumberUtil::createNumber)
-                                    .map(Number::intValue)
-                                    .map(number -> number > flag.limit())
-                                    .orElse(false);
-                            }
+                        } else if (Number.class.isAssignableFrom((Class<?>) actualType)) {
+                            invalid = optional.map(String::valueOf)
+                                .map(NumberUtil::createNumber)
+                                .map(Number::intValue)
+                                .map(number -> number > flag.limit())
+                                .orElse(false);
                         }
-
-                        if (invalid)
-                            throw new ReflectionException("Field '%s' does not have length of '%s' or lower!", field.getField().getName(), flag.limit());
                     }
+
+                    if (invalid)
+                        throw new ReflectionException("Field '%s' does not have length of '%s' or lower!", field.getField().getName(), flag.limit());
                 }
-            });
+            }
+        });
 
         // Handle Invalid Required
         invalidRequired.getOrDefault("_DEFAULT_", Concurrent.newMap())

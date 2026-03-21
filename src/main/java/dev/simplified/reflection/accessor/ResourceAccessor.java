@@ -35,6 +35,8 @@ import java.util.stream.Stream;
 @Getter
 public class ResourceAccessor {
 
+    private static final ConcurrentMap<ClassLoader, ConcurrentList<ResourceInfo>> RESOURCE_CACHE = Concurrent.newMap();
+
     private final @NotNull ClassLoader classLoader;
     private final @NotNull ConcurrentList<ResourceInfo> resources;
 
@@ -57,18 +59,10 @@ public class ResourceAccessor {
      */
     public ResourceAccessor(@NotNull ClassLoader classLoader, @Nullable String packageName) {
         this.classLoader = classLoader;
-        ConcurrentList<LocationInfo> locations = getLocationsFromClassLoader(classLoader);
+        ConcurrentList<ResourceInfo> allResources = scanClassLoader(classLoader);
         String resourceName = StringUtil.stripToEmpty(packageName).replace(".", "/").toLowerCase();
 
-        // Add all locations to the scanned set so that in a classpath [jar1, jar2], where jar1 has a
-        // manifest with Class-Path pointing to jar2, we won't scan jar2 twice.
-        ConcurrentSet<File> scanned = locations.stream()
-            .map(LocationInfo::getFile)
-            .collect(Concurrent.toSet());
-
-        // Scan all locations
-        this.resources = locations.stream()
-            .flatMap(locationInfo -> locationInfo.scanResources(scanned).stream())
+        this.resources = allResources.stream()
             .filter(resourceInfo -> StringUtil.isEmpty(resourceName) || resourceInfo.getResourceName().startsWith(resourceName))
             .collect(Concurrent.toUnmodifiableList());
     }
@@ -80,6 +74,23 @@ public class ResourceAccessor {
         this.resources = resources.stream()
             .filter(resourceInfo -> resourceInfo.getResourceName().startsWith(resourceName))
             .collect(Concurrent.toUnmodifiableList());
+    }
+
+    private static @NotNull ConcurrentList<ResourceInfo> scanClassLoader(@NotNull ClassLoader classLoader) {
+        return RESOURCE_CACHE.computeIfAbsent(classLoader, cl -> {
+            ConcurrentList<LocationInfo> locations = getLocationsFromClassLoader(cl);
+
+            // Add all locations to the scanned set so that in a classpath [jar1, jar2], where jar1 has a
+            // manifest with Class-Path pointing to jar2, we won't scan jar2 twice.
+            ConcurrentSet<File> scanned = locations.stream()
+                .map(LocationInfo::getFile)
+                .collect(Concurrent.toSet());
+
+            // Scan all locations
+            return locations.stream()
+                .flatMap(locationInfo -> locationInfo.scanResources(scanned).stream())
+                .collect(Concurrent.toUnmodifiableList());
+        });
     }
 
     /**
