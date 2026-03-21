@@ -51,6 +51,7 @@ public class Reflection<R> {
     private static final ConcurrentMap<Class<?>, Method[]> DECLARED_METHODS_CACHE = Concurrent.newMap();
     private static final ConcurrentMap<Class<?>, Constructor<?>[]> DECLARED_CONSTRUCTORS_CACHE = Concurrent.newMap();
     private static final ConcurrentMap<Class<?>, ConcurrentSet<FieldAccessor<?>>> ALL_FIELDS_CACHE = Concurrent.newMap();
+    private static final ConcurrentMap<Class<?>, ConcurrentSet<MethodAccessor<?>>> ALL_METHODS_CACHE = Concurrent.newMap();
     private static final ConcurrentMap<Class<?>, ConcurrentList<BuildFlagEntry>> BUILD_FLAG_CACHE = Concurrent.newMap();
     private static final ConcurrentMap<Pair<Class<?>, Integer>, Class<?>> SUPER_CLASS_CACHE = Concurrent.newMap();
     private final @NotNull Class<R> type;
@@ -338,6 +339,42 @@ public class Reflection<R> {
             return this.getSuperReflection().getMethod(name, paramTypes);
 
         throw new ReflectionException("The method ''%s'' was not found with parameters ''%s''.", name, Arrays.asList(types));
+    }
+
+    /**
+     * Gets all methods of the given {@link #getType()}.
+     * <br>
+     * Super classes are automatically checked.
+     *
+     * @return All methods.
+     * @throws ReflectionException When the class or methods cannot be located.
+     */
+    @SuppressWarnings("unchecked")
+    public final @NotNull ConcurrentSet<MethodAccessor<?>> getMethods() throws ReflectionException {
+        if (!this.isProcessingSuperclass()) {
+            ConcurrentSet<MethodAccessor<?>> methodAccessors = Concurrent.newSet();
+
+            for (Method method : getDeclaredMethodsCached(this.getType()))
+                methodAccessors.add(new MethodAccessor<>(this, method));
+
+            return methodAccessors;
+        }
+
+        return ALL_METHODS_CACHE.computeIfAbsent(this.getType(), cls -> {
+            ConcurrentSet<MethodAccessor<?>> methodAccessors = Concurrent.newSet();
+            Class<?> current = cls;
+
+            while (current != null) {
+                Reflection<?> ref = (current == cls) ? this : new Reflection<>((Class<Object>) current);
+
+                for (Method method : getDeclaredMethodsCached(current))
+                    methodAccessors.add(new MethodAccessor<>(ref, method));
+
+                current = current.getSuperclass();
+            }
+
+            return methodAccessors.toUnmodifiableSet();
+        });
     }
 
     /**
