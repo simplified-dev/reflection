@@ -1,7 +1,5 @@
 package dev.sbs.api.reflection.info;
 
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.SystemUtil;
 import lombok.Getter;
@@ -12,6 +10,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
  * Represents a class path resource that can be either a class file or any other resource file
@@ -66,17 +65,12 @@ public class ResourceInfo extends FileInfo {
 
         ResourceInfo that = (ResourceInfo) o;
 
-        return new EqualsBuilder()
-            .append(this.getResourceName(), that.getResourceName())
-            .build();
+        return Objects.equals(this.getResourceName(), that.getResourceName());
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .appendSuper(super.hashCode())
-            .append(this.getResourceName())
-            .build();
+        return Objects.hash(super.hashCode(), this.getResourceName());
     }
 
     public byte[] toBytes() {

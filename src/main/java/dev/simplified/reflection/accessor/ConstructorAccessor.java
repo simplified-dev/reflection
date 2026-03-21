@@ -1,7 +1,5 @@
 package dev.sbs.api.reflection.accessor;
 
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.exception.ReflectionException;
 import lombok.Getter;
@@ -44,7 +42,7 @@ public final class ConstructorAccessor<T> implements Accessor<Constructor<T>> {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (!(obj instanceof Accessor<?> other)) return false;
-        return new EqualsBuilder().append(this.getType(), other.getType()).append(this.getHandle(), other.getHandle()).build();
+        return Objects.equals(this.getType(), other.getType()) && Objects.equals(this.getHandle(), other.getHandle());
     }
 
     /**
@@ -74,7 +72,7 @@ public final class ConstructorAccessor<T> implements Accessor<Constructor<T>> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(this.getType()).append(this.getHandle()).build();
+        return Objects.hash(this.getType(), this.getHandle());
     }
 
     /**

@@ -1,7 +1,5 @@
 package dev.sbs.api.reflection.accessor;
 
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.exception.ReflectionException;
 import lombok.Getter;
@@ -10,6 +8,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.util.Objects;
 
 /**
  * Grants simpler access to field getting and setting.
@@ -42,7 +41,7 @@ public final class FieldAccessor<T> implements Accessor<Field> {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (!(obj instanceof Accessor<?> other)) return false;
-        return new EqualsBuilder().append(this.getType(), other.getType()).append(this.getHandle(), other.getHandle()).build();
+        return Objects.equals(this.getType(), other.getType()) && Objects.equals(this.getHandle(), other.getHandle());
     }
 
     /**
@@ -122,7 +121,7 @@ public final class FieldAccessor<T> implements Accessor<Field> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(this.getType()).append(this.getHandle()).build();
+        return Objects.hash(this.getType(), this.getHandle());
     }
 
     /**

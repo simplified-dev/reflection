@@ -1,13 +1,12 @@
 package dev.sbs.api.reflection.info;
 
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.util.Objects;
 
 /**
  * Represents a file resource that can be either a class file or any other resource file
@@ -27,18 +26,13 @@ public abstract class FileInfo {
 
         FileInfo fileInfo = (FileInfo) o;
 
-        return new EqualsBuilder()
-            .append(this.getFile(), fileInfo.getFile())
-            .append(this.getClassLoader(), fileInfo.getClassLoader())
-            .build();
+        return Objects.equals(this.getFile(), fileInfo.getFile())
+            && Objects.equals(this.getClassLoader(), fileInfo.getClassLoader());
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getFile())
-            .append(this.getClassLoader())
-            .build();
+        return Objects.hash(this.getFile(), this.getClassLoader());
     }
 
     @Override
