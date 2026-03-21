@@ -133,14 +133,14 @@ public class Reflection<R> {
      * @throws ReflectionException When the class or constructor cannot be located.
      */
     @SuppressWarnings("unchecked")
-    public final ConstructorAccessor<R> getConstructor(Class<?>... paramTypes) throws ReflectionException {
+    public final @NotNull ConstructorAccessor<R> getConstructor(Class<?>... paramTypes) throws ReflectionException {
         Class<?>[] types = toPrimitiveTypeArray(paramTypes);
 
         for (Constructor<?> constructor : getDeclaredConstructorsCached(this.getType())) {
             Class<?>[] constructorTypes = toPrimitiveTypeArray(constructor.getParameterTypes());
 
             if (isEqualsTypeArray(constructorTypes, types))
-                return new ConstructorAccessor<R>(this, (Constructor<R>) constructor);
+                return new ConstructorAccessor<>(this, (Constructor<R>) constructor);
         }
 
         throw new ReflectionException("The constructor matching '%s' was not found!", Arrays.asList(types));
