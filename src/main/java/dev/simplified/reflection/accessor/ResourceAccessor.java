@@ -250,7 +250,11 @@ public class ResourceAccessor {
      * urls are actually supported too (for example, in Maven surefire plugin).
      */
     private static @NotNull URL getClassPathEntry(File jarFile, String path) throws MalformedURLException {
-        return new URL(jarFile.toURI().toURL(), path);
+        try {
+            return jarFile.toURI().resolve(path).toURL();
+        } catch (IllegalArgumentException e) {
+            throw new MalformedURLException(e.getMessage());
+        }
     }
 
     /**

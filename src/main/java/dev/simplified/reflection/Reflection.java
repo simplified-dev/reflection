@@ -23,15 +23,14 @@ import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -305,12 +304,8 @@ public class Reflection<R> {
 
         for (String entry : Objects.requireNonNull(StringUtil.split(SystemUtil.JAVA_CLASS_PATH, SystemUtil.PATH_SEPARATOR))) {
             try {
-                try {
-                    urls.add(new File(entry).toURI().toURL());
-                } catch (SecurityException e) { // File.toURI checks to see if the file is a directory
-                    urls.add(new URL("file", null, new File(entry).getAbsolutePath()));
-                }
-            } catch (MalformedURLException ignore) { }
+                urls.add(Path.of(entry).toAbsolutePath().toUri().toURL());
+            } catch (Exception ignore) { }
         }
 
         return urls.toUnmodifiableList();
