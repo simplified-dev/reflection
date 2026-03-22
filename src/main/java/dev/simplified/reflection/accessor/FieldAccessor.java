@@ -30,7 +30,7 @@ public final class FieldAccessor<T> implements Accessor<Field> {
      * Creates a new field accessor.
      *
      * @param reflection the reflection instance that located this field
-     * @param field      the underlying field (must already be accessible)
+     * @param field the underlying field (must already be accessible)
      */
     public FieldAccessor(@NotNull Reflection<?> reflection, @NotNull Field field) {
         this.reflection = reflection;
@@ -143,7 +143,7 @@ public final class FieldAccessor<T> implements Accessor<Field> {
      * <p>
      * Super classes are automatically checked.
      *
-     * @param obj   Instance of the current class object, null if static field.
+     * @param obj Instance of the current class object, null if static field.
      * @param value The new value of the field.
      * @throws ReflectionException When the field cannot be located or the value does match the field type.
      */

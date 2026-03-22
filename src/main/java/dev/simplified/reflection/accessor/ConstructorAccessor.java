@@ -30,7 +30,7 @@ public final class ConstructorAccessor<T> implements Accessor<Constructor<T>> {
     /**
      * Creates a new constructor accessor.
      *
-     * @param reflection  the reflection instance that located this constructor
+     * @param reflection the reflection instance that located this constructor
      * @param constructor the underlying constructor (must already be accessible)
      */
     public ConstructorAccessor(@NotNull Reflection<T> reflection, @NotNull Constructor<T> constructor) {

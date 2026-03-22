@@ -31,7 +31,7 @@ public final class MethodAccessor<T> implements Accessor<Method> {
      * Creates a new method accessor.
      *
      * @param reflection the reflection instance that located this method
-     * @param method     the underlying method (must already be accessible)
+     * @param method the underlying method (must already be accessible)
      */
     public MethodAccessor(@NotNull Reflection<?> reflection, @NotNull Method method) {
         this.reflection = reflection;
@@ -141,7 +141,7 @@ public final class MethodAccessor<T> implements Accessor<Method> {
      * <p>
      * Super classes are automatically checked.
      *
-     * @param obj  Instance of the current class object, null if static field.
+     * @param obj Instance of the current class object, null if static field.
      * @param args The arguments with matching types to pass to the method.
      * @return The invoked method value with matching return type.
      * @throws ReflectionException When the method is passed invalid arguments.

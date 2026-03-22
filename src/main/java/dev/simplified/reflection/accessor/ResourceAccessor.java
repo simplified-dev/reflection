@@ -151,7 +151,7 @@ public class ResourceAccessor {
     /**
      * Returns all classes that are subtypes of the given type (excluding the type itself).
      *
-     * @param <T>  the type
+     * @param <T> the type
      * @param type the supertype or interface to search for
      * @return an unmodifiable list of assignable subtype classes
      */
@@ -166,7 +166,7 @@ public class ResourceAccessor {
      * Returns all classes that are assignable to the given type (excluding the type itself),
      * cast to {@code Class<T>}.
      *
-     * @param <T>  the type
+     * @param <T> the type
      * @param type the supertype or interface to search for
      * @return an unmodifiable list of matching classes cast to {@code Class<T>}
      */

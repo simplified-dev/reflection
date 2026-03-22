@@ -119,11 +119,11 @@ public class LocationInfo extends FileInfo {
      * which have already been traversed in the current tree path will be skipped to eliminate
      * cycles; otherwise symlinks are traversed.
      *
-     * @param directory     the root of the directory to scan
+     * @param directory the root of the directory to scan
      * @param packagePrefix resource path prefix inside {@code classloader} for any files found
-     *                      under {@code directory}
-     * @param currentPath   canonical files already visited in the current directory tree path, for
-     *                      cycle elimination
+     *     under {@code directory}
+     * @param currentPath canonical files already visited in the current directory tree path, for
+     *     cycle elimination
      */
     private void scanDirectory(@NotNull File directory, @NotNull String packagePrefix, @NotNull ConcurrentSet<File> currentPath, @NotNull ConcurrentSet<ResourceInfo> builder) throws IOException {
         File[] files = directory.listFiles();

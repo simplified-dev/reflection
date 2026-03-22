@@ -21,25 +21,17 @@ import java.util.Optional;
  */
 public interface Accessor<T extends AccessibleObject> {
 
-    /**
-     * Gets the reflection object associated with this accessor.
-     *
-     * @return the originating reflection instance
-     */
+    /** The originating reflection instance. */
     @NotNull Reflection<?> getReflection();
 
-    /**
-     * Gets the underlying {@link AccessibleObject} handle.
-     *
-     * @return the underlying handle
-     */
+    /** The underlying {@link AccessibleObject} handle. */
     @NotNull T getHandle();
 
     /**
      * Returns the annotation of the given type present on this handle, or an empty
      * {@link Optional} if the annotation is not present.
      *
-     * @param <A>             the annotation type
+     * @param <A> the annotation type
      * @param annotationClass the annotation class to look for
      * @return an {@link Optional} containing the annotation, or empty if absent
      */
@@ -48,16 +40,13 @@ public interface Accessor<T extends AccessibleObject> {
     }
 
     /**
-     * Returns the Java language modifiers for the handle represented
-     * by this {@code T} object, as an integer.
+     * The Java language modifiers for this handle, as an integer.
      *
      * @see Modifier
      */
     int getModifiers();
 
-    /**
-     * Returns the name of the {@code T} handle.
-     */
+    /** The name of this handle. */
     @NotNull String getName();
 
     /**
@@ -73,7 +62,7 @@ public interface Accessor<T extends AccessibleObject> {
     /**
      * Returns {@code true} if the given annotation type is present on this handle.
      *
-     * @param <A>             the annotation type
+     * @param <A> the annotation type
      * @param annotationClass the annotation class to check for
      * @return {@code true} if the annotation is present; {@code false} otherwise
      */
