@@ -1,7 +1,7 @@
 package dev.simplified.reflection.info;
 
-import dev.simplified.collection.concurrent.Concurrent;
-import dev.simplified.collection.concurrent.ConcurrentSet;
+import dev.simplified.collection.Concurrent;
+import dev.simplified.collection.ConcurrentSet;
 import dev.simplified.reflection.accessor.ResourceAccessor;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;

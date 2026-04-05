@@ -1,16 +1,16 @@
 package dev.simplified.reflection;
 
-import dev.simplified.collection.concurrent.Concurrent;
-import dev.simplified.collection.concurrent.ConcurrentList;
-import dev.simplified.collection.concurrent.ConcurrentMap;
-import dev.simplified.collection.concurrent.ConcurrentSet;
+import dev.simplified.collection.Concurrent;
+import dev.simplified.collection.ConcurrentList;
+import dev.simplified.collection.ConcurrentMap;
+import dev.simplified.collection.ConcurrentSet;
 import dev.simplified.reflection.accessor.ConstructorAccessor;
 import dev.simplified.reflection.accessor.FieldAccessor;
 import dev.simplified.reflection.accessor.MethodAccessor;
 import dev.simplified.reflection.accessor.ResourceAccessor;
 import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.reflection.exception.ReflectionException;
-import dev.simplified.tuple.pair.Pair;
+import dev.simplified.collection.tuple.pair.Pair;
 import dev.simplified.util.ArrayUtil;
 import dev.simplified.util.ClassUtil;
 import dev.simplified.util.NumberUtil;

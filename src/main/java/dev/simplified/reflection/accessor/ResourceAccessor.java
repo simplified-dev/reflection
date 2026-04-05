@@ -1,9 +1,9 @@
 package dev.simplified.reflection.accessor;
 
-import dev.simplified.collection.concurrent.Concurrent;
-import dev.simplified.collection.concurrent.ConcurrentList;
-import dev.simplified.collection.concurrent.ConcurrentMap;
-import dev.simplified.collection.concurrent.ConcurrentSet;
+import dev.simplified.collection.Concurrent;
+import dev.simplified.collection.ConcurrentList;
+import dev.simplified.collection.ConcurrentMap;
+import dev.simplified.collection.ConcurrentSet;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.info.ClassInfo;
 import dev.simplified.reflection.info.LocationInfo;

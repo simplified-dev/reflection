@@ -1,7 +1,7 @@
 package dev.simplified.reflection.diagram;
 
-import dev.simplified.collection.concurrent.Concurrent;
-import dev.simplified.collection.concurrent.ConcurrentList;
+import dev.simplified.collection.Concurrent;
+import dev.simplified.collection.ConcurrentList;
 import dev.simplified.reflection.Reflection;
 import lombok.AccessLevel;
 import lombok.Getter;
