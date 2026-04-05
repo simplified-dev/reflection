@@ -8,7 +8,6 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.info.ClassInfo;
 import dev.sbs.api.reflection.info.LocationInfo;
 import dev.sbs.api.reflection.info.ResourceInfo;
-import dev.sbs.api.util.Preconditions;
 import dev.sbs.api.util.StringUtil;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -272,7 +271,8 @@ public class ResourceAccessor {
     }
 
     public static @NotNull File toFile(@NotNull URL url) {
-        Preconditions.checkArgument(url.getProtocol().equals("file"));
+        if (!url.getProtocol().equals("file"))
+            throw new IllegalArgumentException("Expected file protocol: " + url);
 
         try {
             return new File(url.toURI()); // Accepts escaped characters like %20.

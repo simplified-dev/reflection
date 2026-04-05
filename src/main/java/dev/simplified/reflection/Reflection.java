@@ -8,6 +8,7 @@ import dev.sbs.api.reflection.accessor.ConstructorAccessor;
 import dev.sbs.api.reflection.accessor.FieldAccessor;
 import dev.sbs.api.reflection.accessor.MethodAccessor;
 import dev.sbs.api.reflection.accessor.ResourceAccessor;
+import dev.sbs.api.reflection.builder.BuildFlag;
 import dev.sbs.api.reflection.exception.ReflectionException;
 import dev.sbs.api.tuple.pair.Pair;
 import dev.sbs.api.util.ArrayUtil;
@@ -16,8 +17,6 @@ import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.PrimitiveUtil;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.SystemUtil;
-import dev.sbs.api.util.builder.BuildFlag;
-import dev.sbs.api.util.builder.ClassBuilder;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
@@ -836,24 +835,23 @@ public class Reflection<R> {
     }
 
     /**
-     * Validates a builder's fields against their {@link BuildFlag @BuildFlag} annotations.
+     * Validates an object's fields against their {@link BuildFlag @BuildFlag} annotations.
      * Checks null/empty constraints, regex patterns, and length limits.
      *
      * <p>
-     * The list of annotated fields per builder class is cached on first invocation,
-     * so subsequent calls for the same builder type skip all reflective discovery and
+     * The list of annotated fields per class is cached on first invocation,
+     * so subsequent calls for the same type skip all reflective discovery and
      * only read runtime field values.
      *
-     * @param builder the builder instance to validate
-     * @param <T> the builder type
+     * @param target the object instance to validate
      * @throws ReflectionException if any field violates its {@link BuildFlag} constraints
      */
     @SuppressWarnings("all")
-    public static <T extends ClassBuilder<?>> void validateFlags(@NotNull T builder) {
+    public static void validateFlags(@NotNull Object target) {
         ConcurrentMap<String, ConcurrentMap<FieldAccessor<?>, Boolean>> invalidRequired = Concurrent.newMap();
         invalidRequired.put("_DEFAULT_", Concurrent.newMap());
 
-        ConcurrentList<BuildFlagEntry> entries = BUILD_FLAG_CACHE.computeIfAbsent(builder.getClass(), cls ->
+        ConcurrentList<BuildFlagEntry> entries = BUILD_FLAG_CACHE.computeIfAbsent(target.getClass(), cls ->
             new Reflection<>(cls)
                 .getFields()
                 .stream()
@@ -866,7 +864,7 @@ public class Reflection<R> {
             FieldAccessor<?> field = entry.fieldAccessor();
             BuildFlag flag = entry.flag();
             boolean invalid = false;
-            Object value = field.get(builder);
+            Object value = field.get(target);
 
             // Null
             if (flag.nonNull()) {
@@ -925,7 +923,7 @@ public class Reflection<R> {
                         invalid = ((Collection<?>) value).size() > flag.limit();
 
                     if (invalid)
-                        throw new ReflectionException("Field '%s' in '%s' does not match pattern '%s' (value: '%s')", field.getField().getName(), builder.getClass().getSimpleName(), flag.pattern(), value);
+                        throw new ReflectionException("Field '%s' in '%s' does not match pattern '%s' (value: '%s')", field.getField().getName(), target.getClass().getSimpleName(), flag.pattern(), value);
                 }
             }
 
@@ -957,7 +955,7 @@ public class Reflection<R> {
                     }
 
                     if (invalid)
-                        throw new ReflectionException("Field '%s' in '%s' has length %s, exceeds limit of %s", field.getField().getName(), builder.getClass().getSimpleName(), actualLength, flag.limit());
+                        throw new ReflectionException("Field '%s' in '%s' has length %s, exceeds limit of %s", field.getField().getName(), target.getClass().getSimpleName(), actualLength, flag.limit());
                 }
             }
         });
@@ -968,7 +966,7 @@ public class Reflection<R> {
             .filterValue(Boolean::booleanValue)
             .findFirst()
             .ifPresentOrElse(pair -> {
-                throw new ReflectionException("Field '%s' in '%s' is required and is null/empty", pair.getKey().getField().getName(), builder.getClass().getSimpleName());
+                throw new ReflectionException("Field '%s' in '%s' is required and is null/empty", pair.getKey().getField().getName(), target.getClass().getSimpleName());
             }, () -> invalidRequired.stream()
                 .filterKey(key -> !key.equals("_DEFAULT_"))
                 .filter((key, fields) -> fields.stream().allMatch((field, invalid) -> invalid))
@@ -977,7 +975,7 @@ public class Reflection<R> {
                     throw new ReflectionException(
                         "Field group '%s' in '%s' is required and [%s] is null/empty!",
                         invalidGroup.getKey(),
-                        builder.getClass().getSimpleName(),
+                        target.getClass().getSimpleName(),
                         invalidGroup.getValue()
                             .stream()
                             .filterValue(Boolean::booleanValue)
