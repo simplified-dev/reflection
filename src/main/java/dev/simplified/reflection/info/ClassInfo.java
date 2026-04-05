@@ -1,7 +1,7 @@
-package dev.sbs.api.reflection.info;
+package dev.simplified.reflection.info;
 
-import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.util.RegexUtil;
+import dev.simplified.reflection.Reflection;
+import dev.simplified.util.RegexUtil;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 

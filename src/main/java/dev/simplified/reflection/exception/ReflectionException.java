@@ -1,6 +1,6 @@
-package dev.sbs.api.reflection.exception;
+package dev.simplified.reflection.exception;
 
-import dev.sbs.api.reflection.Reflection;
+import dev.simplified.reflection.Reflection;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

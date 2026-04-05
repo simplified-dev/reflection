@@ -1,7 +1,7 @@
-package dev.sbs.api.reflection.accessor;
+package dev.simplified.reflection.accessor;
 
-import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.reflection.exception.ReflectionException;
+import dev.simplified.reflection.Reflection;
+import dev.simplified.reflection.exception.ReflectionException;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -1,14 +1,14 @@
-package dev.sbs.api.reflection.accessor;
+package dev.simplified.reflection.accessor;
 
-import dev.sbs.api.collection.concurrent.Concurrent;
-import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.collection.concurrent.ConcurrentSet;
-import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.reflection.info.ClassInfo;
-import dev.sbs.api.reflection.info.LocationInfo;
-import dev.sbs.api.reflection.info.ResourceInfo;
-import dev.sbs.api.util.StringUtil;
+import dev.simplified.collection.concurrent.Concurrent;
+import dev.simplified.collection.concurrent.ConcurrentList;
+import dev.simplified.collection.concurrent.ConcurrentMap;
+import dev.simplified.collection.concurrent.ConcurrentSet;
+import dev.simplified.reflection.Reflection;
+import dev.simplified.reflection.info.ClassInfo;
+import dev.simplified.reflection.info.LocationInfo;
+import dev.simplified.reflection.info.ResourceInfo;
+import dev.simplified.util.StringUtil;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

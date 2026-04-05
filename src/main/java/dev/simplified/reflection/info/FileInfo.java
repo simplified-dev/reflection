@@ -1,4 +1,4 @@
-package dev.sbs.api.reflection.info;
+package dev.simplified.reflection.info;
 
 import lombok.AccessLevel;
 import lombok.Getter;

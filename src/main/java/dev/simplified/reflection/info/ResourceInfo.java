@@ -1,7 +1,7 @@
-package dev.sbs.api.reflection.info;
+package dev.simplified.reflection.info;
 
-import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.util.SystemUtil;
+import dev.simplified.util.StringUtil;
+import dev.simplified.util.SystemUtil;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -1,8 +1,8 @@
-package dev.sbs.api.reflection.diagram;
+package dev.simplified.reflection.diagram;
 
-import dev.sbs.api.collection.concurrent.Concurrent;
-import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.reflection.Reflection;
+import dev.simplified.collection.concurrent.Concurrent;
+import dev.simplified.collection.concurrent.ConcurrentList;
+import dev.simplified.reflection.Reflection;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -1,8 +1,8 @@
-package dev.sbs.api.reflection.info;
+package dev.simplified.reflection.info;
 
-import dev.sbs.api.collection.concurrent.Concurrent;
-import dev.sbs.api.collection.concurrent.ConcurrentSet;
-import dev.sbs.api.reflection.accessor.ResourceAccessor;
+import dev.simplified.collection.concurrent.Concurrent;
+import dev.simplified.collection.concurrent.ConcurrentSet;
+import dev.simplified.reflection.accessor.ResourceAccessor;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
