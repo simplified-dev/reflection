@@ -193,7 +193,7 @@ public class ResourceAccessor {
             }
         }
 
-        return entries.toUnmodifiableMap();
+        return entries.toUnmodifiable();
     }
 
     /**
@@ -240,7 +240,7 @@ public class ResourceAccessor {
                 }
             }
         }
-        return builder.toUnmodifiableSet();
+        return builder.toUnmodifiable();
     }
     /**
      * Returns the absolute uri of the Class-Path entry value as specified in <a
@@ -267,7 +267,7 @@ public class ResourceAccessor {
         for (Map.Entry<File, ClassLoader> entry : getClassPathEntries(classLoader).entrySet())
             locationInfos.add(new LocationInfo(entry.getKey(), entry.getValue()));
 
-        return locationInfos.toUnmodifiableList();
+        return locationInfos.toUnmodifiable();
     }
 
     public static @NotNull File toFile(@NotNull URL url) {

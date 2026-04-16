@@ -48,7 +48,7 @@ public class LocationInfo extends FileInfo {
         ConcurrentSet<ResourceInfo> builder = Concurrent.newSet();
         scannedFiles.add(this.getFile());
         this.scan(this.getFile(), scannedFiles, builder);
-        return builder.toUnmodifiableSet();
+        return builder.toUnmodifiable();
     }
 
     private void scan(@NotNull File file, @NotNull ConcurrentSet<File> scannedUris, @NotNull ConcurrentSet<ResourceInfo> builder) {
