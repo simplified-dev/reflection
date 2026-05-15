@@ -51,8 +51,8 @@ public final class FieldAccessor<T> implements Accessor<Field> {
      * <p>
      * Super classes are automatically checked.
      *
-     * @return The field value with matching type.
-     * @throws ReflectionException When the static field cannot be located.
+     * @return The field value with matching type
+     * @throws ReflectionException When the static field cannot be located
      */
     public @Nullable T get() throws ReflectionException {
         return this.get(null);
@@ -63,9 +63,9 @@ public final class FieldAccessor<T> implements Accessor<Field> {
      * <p>
      * Super classes are automatically checked.
      *
-     * @param obj Instance of the current class object, null if static field.
-     * @return The field value with matching type.
-     * @throws ReflectionException When the field cannot be located.
+     * @param obj Instance of the current class object, null if static field
+     * @return The field value with matching type
+     * @throws ReflectionException When the field cannot be located
      */
     @SuppressWarnings("unchecked")
     public @Nullable T get(@Nullable Object obj) throws ReflectionException {
@@ -79,7 +79,7 @@ public final class FieldAccessor<T> implements Accessor<Field> {
     /**
      * Gets the field associated with this accessor.
      *
-     * @return The field.
+     * @return The field
      */
     public @NotNull Field getField() {
         return this.getHandle();
@@ -131,8 +131,8 @@ public final class FieldAccessor<T> implements Accessor<Field> {
      * <p>
      * Super classes are automatically checked.
      *
-     * @param value The new value of the field.
-     * @throws ReflectionException When the field cannot be located or the value does match the field type.
+     * @param value The new value of the field
+     * @throws ReflectionException When the field cannot be located or the value does match the field type
      */
     public void set(@Nullable Object value) throws ReflectionException {
         this.set(null, value);
@@ -143,9 +143,9 @@ public final class FieldAccessor<T> implements Accessor<Field> {
      * <p>
      * Super classes are automatically checked.
      *
-     * @param obj Instance of the current class object, null if static field.
-     * @param value The new value of the field.
-     * @throws ReflectionException When the field cannot be located or the value does match the field type.
+     * @param obj Instance of the current class object, null if static field
+     * @param value The new value of the field
+     * @throws ReflectionException When the field cannot be located or the value does match the field type
      */
     public void set(@Nullable Object obj, @Nullable Object value) throws ReflectionException {
         try {

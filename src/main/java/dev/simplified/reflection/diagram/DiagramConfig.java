@@ -28,25 +28,39 @@ import java.util.function.Predicate;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class DiagramConfig {
 
-    /** The relative path from a base directory to the output directory. */
+    /**
+     * The relative path from a base directory to the output directory.
+     */
     private final @NotNull Path docFilesPath;
 
-    /** The SVG file name (always includes the {@code .svg} extension). */
+    /**
+     * The SVG file name (always includes the {@code .svg} extension).
+     */
     private final @NotNull String fileName;
 
-    /** The suffix stripped from type simple names for display. */
+    /**
+     * The suffix stripped from type simple names for display.
+     */
     private final @NotNull String suffix;
 
-    /** The class whose package is scanned for subtypes. */
+    /**
+     * The class whose package is scanned for subtypes.
+     */
     private final @NotNull Class<?> scanPackage;
 
-    /** The root types whose hierarchies are discovered and included as nodes. */
+    /**
+     * The root types whose hierarchies are discovered and included as nodes.
+     */
     private final @NotNull Class<?>[] roots;
 
-    /** The predicate that filters discovered types before layout. */
+    /**
+     * The predicate that filters discovered types before layout.
+     */
     private final @NotNull Predicate<Class<?>> typeFilter;
 
-    /** The ELK layering options applied to the layout algorithm. */
+    /**
+     * The ELK layering options applied to the layout algorithm.
+     */
     private final @NotNull ConcurrentMap<LayeringOption, Object> layeringOptions;
 
     /**
@@ -260,18 +274,30 @@ public final class DiagramConfig {
     @RequiredArgsConstructor
     public enum LayeringOption {
 
-        /** The layering strategy to use. */
+        /**
+         * The layering strategy to use.
+         */
         STRATEGY(LayeringStrategy.class),
-        /** Upper bound on width for the {@link LayeringStrategy#MIN_WIDTH} strategy. */
+        /**
+         * Upper bound on width for the {@link LayeringStrategy#MIN_WIDTH} strategy.
+         */
         MIN_WIDTH_UPPER_BOUND_ON_WIDTH(Integer.class),
-        /** Scaling factor for upper layer estimation in the {@link LayeringStrategy#MIN_WIDTH} strategy. */
+        /**
+         * Scaling factor for upper layer estimation in the {@link LayeringStrategy#MIN_WIDTH} strategy.
+         */
         MIN_WIDTH_UPPER_LAYER_ESTIMATION_SCALING_FACTOR(Integer.class),
-        /** Maximum iterations for node promotion. */
+        /**
+         * Maximum iterations for node promotion.
+         */
         NODE_PROMOTION_MAX_ITERATIONS(Integer.class),
-        /** Layer bound for the {@link LayeringStrategy#COFFMAN_GRAHAM} strategy. */
+        /**
+         * Layer bound for the {@link LayeringStrategy#COFFMAN_GRAHAM} strategy.
+         */
         COFFMAN_GRAHAM_LAYER_BOUND(Integer.class);
 
-        /** The expected value type for this option. */
+        /**
+         * The expected value type for this option.
+         */
         private final @NotNull Class<?> valueType;
 
     }

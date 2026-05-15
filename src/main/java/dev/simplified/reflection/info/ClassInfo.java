@@ -72,7 +72,7 @@ public class ClassInfo extends ResourceInfo {
     /**
      * Loads (but doesn't link or initialize) the class.
      *
-     * @throws LinkageError when there were errors in loading classes that this class depends on.
+     * @throws LinkageError when there were errors in loading classes that this class depends on
      *                      For example, {@link NoClassDefFoundError}.
      */
     public @NotNull Class<?> load() {
