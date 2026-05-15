@@ -48,7 +48,7 @@ public final class ConstructorAccessor<T> implements Accessor<Constructor<T>> {
     /**
      * Gets the constructor associated with this accessor.
      *
-     * @return The constructor.
+     * @return The constructor
      */
     public @NotNull Constructor<T> getConstructor() {
         return this.getHandle();
@@ -80,8 +80,8 @@ public final class ConstructorAccessor<T> implements Accessor<Constructor<T>> {
      * <p>
      * Super classes are automatically checked.
      *
-     * @param args The arguments with matching types to pass to the constructor.
-     * @throws ReflectionException When the constructor is passed invalid arguments.
+     * @param args The arguments with matching types to pass to the constructor
+     * @throws ReflectionException When the constructor is passed invalid arguments
      */
     public @NotNull T newInstance(@Nullable Object... args) throws ReflectionException {
         try {

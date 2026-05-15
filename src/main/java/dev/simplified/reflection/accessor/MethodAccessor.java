@@ -48,7 +48,7 @@ public final class MethodAccessor<T> implements Accessor<Method> {
     /**
      * Gets the method associated with this accessor.
      *
-     * @return The method.
+     * @return The method
      */
     public @NotNull Method getMethod() {
         return this.getHandle();
@@ -98,8 +98,8 @@ public final class MethodAccessor<T> implements Accessor<Method> {
      * <p>
      * Super classes are automatically checked.
      *
-     * @return The invoked method value with matching return type.
-     * @throws ReflectionException When the method is not static with no arguments.
+     * @return The invoked method value with matching return type
+     * @throws ReflectionException When the method is not static with no arguments
      */
     public @Nullable T invoke() throws ReflectionException {
         return this.invoke((Object) null);
@@ -110,9 +110,9 @@ public final class MethodAccessor<T> implements Accessor<Method> {
      * <p>
      * Super classes are automatically checked.
      *
-     * @param obj Instance of the current class object, null if static field.
-     * @return The invoked method value with matching return type.
-     * @throws ReflectionException When the method is passed an invalid object.
+     * @param obj Instance of the current class object, null if static field
+     * @return The invoked method value with matching return type
+     * @throws ReflectionException When the method is passed an invalid object
      */
     @SuppressWarnings("unchecked")
     public @Nullable T invoke(@Nullable Object obj) throws ReflectionException {
@@ -128,10 +128,10 @@ public final class MethodAccessor<T> implements Accessor<Method> {
      * <p>
      * Super classes are automatically checked.
      *
-     * @param obj Instance of the current class object, null if static field.
-     * @param args The arguments with matching types to pass to the method.
-     * @return The invoked method value with matching return type.
-     * @throws ReflectionException When the method is passed invalid arguments.
+     * @param obj Instance of the current class object, null if static field
+     * @param args The arguments with matching types to pass to the method
+     * @return The invoked method value with matching return type
+     * @throws ReflectionException When the method is passed invalid arguments
      */
     @SuppressWarnings("unchecked")
     public @Nullable T invoke(@Nullable Object obj, @Nullable Object... args) throws ReflectionException {

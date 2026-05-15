@@ -104,13 +104,19 @@ public final class TypeHierarchyDiagram {
      */
     private record EdgeRenderData(double[][] points, List<double[]> segments, boolean dashed, double tipX, double tipY) {}
 
-    /** The relative path from a base directory to the output directory. */
+    /**
+     * The relative path from a base directory to the output directory.
+     */
     private final @NotNull Path docFilesPath;
 
-    /** The SVG file name (always includes the {@code .svg} extension). */
+    /**
+     * The SVG file name (always includes the {@code .svg} extension).
+     */
     private final @NotNull String fileName;
 
-    /** The rendered SVG markup. */
+    /**
+     * The rendered SVG markup.
+     */
     private final @NotNull String svg;
 
     /**
@@ -126,7 +132,9 @@ public final class TypeHierarchyDiagram {
         Files.writeString(dir.resolve(this.fileName), this.svg);
     }
 
-    /** Returns the SVG markup. */
+    /**
+     * Returns the SVG markup.
+     */
     @Override
     public @NotNull String toString() {
         return this.svg;

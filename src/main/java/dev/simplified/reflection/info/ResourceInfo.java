@@ -36,26 +36,34 @@ public class ResourceInfo extends FileInfo {
             return new ResourceInfo(file, resourceName, loader);
     }
 
-    /** The file extension without a leading dot (e.g., "png"). */
+    /**
+     * The file extension without a leading dot (e.g., "png").
+     */
     public final @NotNull String getExtension() {
         return StringUtil.getFileExtension(this.getResourceName());
     }
 
-    /** The filename without extension (e.g., "panel" from "emojis/system/panel.png"). */
+    /**
+     * The filename without extension (e.g., "panel" from "emojis/system/panel.png").
+     */
     public final @NotNull String getName() {
         String fileName = this.getFileName();
         int dotIndex = fileName.lastIndexOf('.');
         return dotIndex > 0 ? fileName.substring(0, dotIndex) : fileName;
     }
 
-    /** The filename with extension (e.g., "accept.png"). */
+    /**
+     * The filename with extension (e.g., "accept.png").
+     */
     public final @NotNull String getFileName() {
         String resourceName = this.getResourceName();
         int lastSlash = resourceName.lastIndexOf('/');
         return lastSlash >= 0 ? resourceName.substring(lastSlash + 1) : resourceName;
     }
 
-    /** The directory path without a trailing slash (e.g., "emojis/system"). */
+    /**
+     * The directory path without a trailing slash (e.g., "emojis/system").
+     */
     public final @NotNull String getPath() {
         String resourceName = this.getResourceName();
         int lastSlash = resourceName.lastIndexOf('/');

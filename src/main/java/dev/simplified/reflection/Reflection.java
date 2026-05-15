@@ -60,26 +60,44 @@ import java.util.stream.Collectors;
 @Getter
 public class Reflection<R> {
 
-    /** Cache of fully-qualified class path to resolved {@link Class} object. */
+    /**
+     * Cache of fully-qualified class path to resolved {@link Class} object.
+     */
     private static final ConcurrentMap<String, Class<?>> CLASS_CACHE = Concurrent.newMap();
-    /** Cache of declared fields per class, made accessible on first load. */
+    /**
+     * Cache of declared fields per class, made accessible on first load.
+     */
     private static final ConcurrentMap<Class<?>, Field[]> DECLARED_FIELDS_CACHE = Concurrent.newMap();
-    /** Cache of declared methods per class, made accessible on first load. */
+    /**
+     * Cache of declared methods per class, made accessible on first load.
+     */
     private static final ConcurrentMap<Class<?>, Method[]> DECLARED_METHODS_CACHE = Concurrent.newMap();
-    /** Cache of declared constructors per class, made accessible on first load. */
+    /**
+     * Cache of declared constructors per class, made accessible on first load.
+     */
     private static final ConcurrentMap<Class<?>, Constructor<?>[]> DECLARED_CONSTRUCTORS_CACHE = Concurrent.newMap();
-    /** Cache of flattened field accessors across the full superclass chain, per class. */
+    /**
+     * Cache of flattened field accessors across the full superclass chain, per class.
+     */
     private static final ConcurrentMap<Class<?>, ConcurrentSet<FieldAccessor<?>>> ALL_FIELDS_CACHE = Concurrent.newMap();
-    /** Cache of flattened method accessors across the full superclass chain, per class. */
+    /**
+     * Cache of flattened method accessors across the full superclass chain, per class.
+     */
     private static final ConcurrentMap<Class<?>, ConcurrentSet<MethodAccessor<?>>> ALL_METHODS_CACHE = Concurrent.newMap();
-    /** Cache of {@link BuildFlag @BuildFlag} field metadata per builder class. */
+    /**
+     * Cache of {@link BuildFlag @BuildFlag} field metadata per builder class.
+     */
     private static final ConcurrentMap<Class<?>, ConcurrentList<BuildFlagEntry>> BUILD_FLAG_CACHE = Concurrent.newMap();
-    /** Cache of resolved generic superclass types, keyed by (class, type argument index). */
+    /**
+     * Cache of resolved generic superclass types, keyed by (class, type argument index).
+     */
     private static final ConcurrentMap<Pair<Class<?>, Integer>, Class<?>> SUPER_CLASS_CACHE = Concurrent.newMap();
     private final @NotNull Class<R> type;
     @Setter private boolean processingSuperclass = true;
 
-    /** Pairs a {@link FieldAccessor} with its {@link BuildFlag} annotation for cached validation. */
+    /**
+     * Pairs a {@link FieldAccessor} with its {@link BuildFlag} annotation for cached validation.
+     */
     private record BuildFlagEntry(@NotNull FieldAccessor<?> fieldAccessor, @NotNull BuildFlag flag) { }
 
     /**

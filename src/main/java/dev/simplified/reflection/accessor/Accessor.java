@@ -21,10 +21,14 @@ import java.util.Optional;
  */
 public interface Accessor<T extends AccessibleObject> {
 
-    /** The originating reflection instance. */
+    /**
+     * The originating reflection instance.
+     */
     @NotNull Reflection<?> getReflection();
 
-    /** The underlying {@link AccessibleObject} handle. */
+    /**
+     * The underlying {@link AccessibleObject} handle.
+     */
     @NotNull T getHandle();
 
     /**
@@ -46,14 +50,16 @@ public interface Accessor<T extends AccessibleObject> {
      */
     int getModifiers();
 
-    /** The name of this handle. */
+    /**
+     * The name of this handle.
+     */
     @NotNull String getName();
 
     /**
      * Gets the class object associated with this accessor.
      *
-     * @return The class object.
-     * @throws ReflectionException When the class cannot be located.
+     * @return The class object
+     * @throws ReflectionException When the class cannot be located
      */
     default @NotNull Class<?> getType() throws ReflectionException {
         return this.getReflection().getType();
